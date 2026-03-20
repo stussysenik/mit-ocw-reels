@@ -1,0 +1,41 @@
+# Xcode
+DerivedData/
+*.xcodeproj/
+xcuserdata/
+*.xcworkspace/
+!*.xcodeproj/project.pbxproj
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Claude Code
+.claude/
+
+# Superpowers
+.superpowers/
+
+# Local tasks
+tasks/
+
+# CocoaPods (if used later)
+Pods/
+
+# Fastlane (if used later)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
