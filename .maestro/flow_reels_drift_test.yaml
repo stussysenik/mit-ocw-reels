@@ -1,0 +1,44 @@
+appId: com.mitreels.app
+---
+# Test: Verify reels feed has no upward drift
+# Each reel should snap to the same full-screen position
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Reel 1 — first reel after launch
+- takeScreenshot: reels_drift_1
+
+# Reel 2 — swipe up to next
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: reels_drift_2
+
+# Reel 3
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: reels_drift_3
+
+# Reel 4
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: reels_drift_4
+
+# Reel 5
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: reels_drift_5

@@ -1,0 +1,37 @@
+appId: com.mitreels.app
+---
+# Test: Courses tab + gear settings + autoplay toggle
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Navigate to Courses tab
+- tapOn: "Courses"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: courses_list
+
+# Tap the gear icon to open settings
+- tapOn:
+    id: "settingsButton"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: settings_sheet
+
+# Toggle autoplay off
+- tapOn:
+    id: "autoplayToggle"
+- waitForAnimationToEnd
+- takeScreenshot: settings_autoplay_off
+
+# Toggle back on
+- tapOn:
+    id: "autoplayToggle"
+- waitForAnimationToEnd
+- takeScreenshot: settings_autoplay_on
+
+# Dismiss settings
+- tapOn: "Done"
+- waitForAnimationToEnd

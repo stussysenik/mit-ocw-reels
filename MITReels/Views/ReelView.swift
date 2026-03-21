@@ -1,60 +1,149 @@
 import SwiftUI
 
 /// A single full-screen reel displaying a YouTube lecture video.
-/// VStack layout: video centered, course info pinned at bottom.
-/// WKWebView renders above SwiftUI overlays, so we use VStack (not ZStack) to avoid overlap.
+///
+/// Minimal layout: course number + title above the video, single metadata
+/// line below. White background, no decorative elements.
 struct ReelView: View {
     let lecture: Lecture
 
+    /// Optional 0-based index; when set, shows "LECTURE N" instead of course number.
+    var lectureIndex: Int? = nil
+
+    /// Driven by the parent's scroll-position tracker. Controls auto-play/pause.
+    var isVisible: Bool = false
+
+    /// When false, videos won't auto-play on scroll — user must tap play manually.
+    var autoplayEnabled: Bool = true
+
+    @State private var isVideoLoading = true
+    @State private var hasVideoError = false
+    @State private var currentTime: Double = 0
+    @State private var duration: Double = 0
+    @State private var isPlaying = false
+    @State private var seekTarget: Double? = nil
+
+    private var school: MITSchool {
+        MITSchool.from(courseNumber: lecture.courseNumber)
+    }
+
+    private var displayLabel: String {
+        if let index = lectureIndex {
+            return "LECTURE \(index + 1)"
+        }
+        return lecture.courseNumber
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 20)
+            Spacer(minLength: 0)
 
-            // YouTube video player — centered with 16:9 aspect ratio
-            YouTubePlayerView(videoId: lecture.youtubeId)
+            // Course number + title
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayLabel)
+                    .font(Typography.heroNumber)
+                    .foregroundStyle(CarbonColor.textPrimary)
+
+                Text(lecture.title)
+                    .font(Typography.reelTitle)
+                    .foregroundStyle(CarbonColor.textSecondary)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.md)
+            .padding(.bottom, Spacing.sm)
+
+            // Video player — edge-to-edge, 16:9
+            videoPlayer
                 .frame(maxWidth: .infinity)
                 .aspectRatio(16 / 9, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 12)
 
-            Spacer(minLength: 16)
+            // Single metadata line
+            HStack(spacing: 6) {
+                Text(school.shortName)
+                    .font(Typography.reelMeta)
+                    .foregroundStyle(school.color)
 
-            // Course info card pinned at bottom
-            VStack(alignment: .leading, spacing: 8) {
-                Text(lecture.title)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .lineLimit(2)
+                Text("\u{00B7}")
+                    .foregroundStyle(CarbonColor.textTertiary)
 
                 Text(lecture.courseName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .font(Typography.reelMeta)
+                    .foregroundStyle(CarbonColor.textLabel)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.sm)
 
-                HStack(spacing: 12) {
-                    Label(lecture.courseNumber, systemImage: "book.closed.fill")
-                    Label(lecture.department, systemImage: "building.2.fill")
+            Spacer(minLength: 0)
+        }
+        .background(CarbonColor.reelBackground.ignoresSafeArea())
+        .onChange(of: isVisible) { _, visible in
+            isPlaying = visible && autoplayEnabled
+        }
+    }
+
+    // MARK: - Video Player
+
+    private var videoPlayer: some View {
+        ZStack(alignment: .bottom) {
+            ZStack {
+                YouTubeThumbnailView(videoId: lecture.youtubeId)
+                    .overlay {
+                        if isVideoLoading && !hasVideoError {
+                            ShimmerView()
+                                .opacity(0.55)
+                        }
+                    }
+
+                YouTubePlayerView(
+                    videoId: lecture.youtubeId,
+                    autoplay: isVisible && autoplayEnabled,
+                    isLoading: $isVideoLoading,
+                    hasError: $hasVideoError,
+                    currentTime: $currentTime,
+                    duration: $duration,
+                    isPlaying: $isPlaying,
+                    seekTo: $seekTarget
+                )
+                .opacity(isVideoLoading && !hasVideoError ? 0 : 1)
+                .animation(.easeIn(duration: 0.3), value: isVideoLoading)
+
+                if isVideoLoading && !hasVideoError {
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(.white)
+                        .transition(.opacity)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
-                if !lecture.topicName.isEmpty {
-                    Text(lecture.topicName)
-                        .font(.caption2)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.red.opacity(0.1))
-                        .foregroundStyle(.red)
-                        .clipShape(Capsule())
+                if hasVideoError {
+                    VStack(spacing: Spacing.xs) {
+                        Image(systemName: "video.slash")
+                            .font(.title)
+                            .foregroundStyle(CarbonColor.textLabel)
+                        Text("Video unavailable")
+                            .font(.caption)
+                            .foregroundStyle(CarbonColor.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(CarbonColor.layerHover)
+                    .transition(.opacity)
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+
+            if !isVideoLoading && !hasVideoError && duration > 0 {
+                TimelineScrubber(currentTime: $currentTime, duration: duration) { time in
+                    seekTarget = time
+                }
+            }
         }
-        .background(Color(.systemGroupedBackground))
     }
 }
+
+#if DEBUG
+#Preview {
+    ReelView(lecture: PreviewSampleData.sampleLecture, isVisible: true, autoplayEnabled: true)
+        .modelContainer(PreviewSampleData.container)
+}
+#endif

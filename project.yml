@@ -33,4 +33,16 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 95MF6RX2GK
         ENABLE_PREVIEWS: YES
+  MITReelsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MITReelsTests
+    dependencies:
+      - target: MITReels
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        DEVELOPMENT_TEAM: 95MF6RX2GK

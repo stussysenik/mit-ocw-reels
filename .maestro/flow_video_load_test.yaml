@@ -1,0 +1,27 @@
+appId: com.mitreels.app
+---
+# Test: Wait longer for YouTube player to actually load
+
+- launchApp:
+    clearState: true
+
+# Wait 8 seconds for YouTube IFrame API to load and initialize
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: video_after_8s
+
+# Swipe to next reel and wait
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: video2_after_8s
+
+# Swipe to third reel
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: video3_after_8s

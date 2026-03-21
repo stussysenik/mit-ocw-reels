@@ -2,8 +2,10 @@ import SwiftUI
 import SwiftData
 
 /// App entry point — configures SwiftData ModelContainer and seeds data on first launch.
-/// Container is created explicitly in init() so seeding runs synchronously on mainContext,
-/// ensuring @Query picks up the data immediately when views appear.
+///
+/// Two-phase content pipeline:
+///   1. Synchronous seed from bundled seed_data.json (instant content on first launch)
+///   2. Background OCW scraper expands the catalog from live MIT OCW sitemaps
 @main
 struct MITReelsApp: App {
     let container: ModelContainer
@@ -12,6 +14,7 @@ struct MITReelsApp: App {
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
             MITReelsApp.seedDataIfNeeded(context: container.mainContext)
+            MITReelsApp.startBackgroundScrape(container: container)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
@@ -22,6 +25,95 @@ struct MITReelsApp: App {
             ContentView()
         }
         .modelContainer(container)
+    }
+
+    // MARK: - Background Scraper
+
+    /// Kicks off the OCW scraper in a detached Task after seed data is loaded.
+    /// Merges newly discovered lectures into SwiftData, deduplicating by youtubeId.
+    /// Throttled to once every 24 hours via UserDefaults timestamp.
+    private static func startBackgroundScrape(container: ModelContainer) {
+        let lastScrape = UserDefaults.standard.double(forKey: "lastScrapeTimestamp")
+        let hoursSinceLastScrape = (Date().timeIntervalSince1970 - lastScrape) / 3600
+
+        guard hoursSinceLastScrape > 24 || lastScrape == 0 else {
+            print("OCWScraper: skipping, last scrape \(Int(hoursSinceLastScrape))h ago")
+            return
+        }
+
+        Task.detached {
+            do {
+                let scraper = OCWScraper()
+                let scraped = try await scraper.scrapeAll()
+                print("OCWScraper: discovered \(scraped.count) lectures")
+
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastScrapeTimestamp")
+
+                await MainActor.run {
+                    mergeScrapedData(scraped, into: container.mainContext)
+                }
+            } catch {
+                print("OCWScraper failed: \(error)")
+            }
+        }
+    }
+
+    /// Merge scraped lectures into SwiftData, skipping duplicates by youtubeId.
+    @MainActor
+    private static func mergeScrapedData(_ scraped: [ScrapedLecture], into context: ModelContext) {
+        // Build set of existing YouTube IDs for fast lookup
+        let descriptor = FetchDescriptor<Lecture>()
+        let existing = (try? context.fetch(descriptor)) ?? []
+        let existingIds = Set(existing.map { $0.youtubeId.lowercased() })
+
+        // Build course lookup
+        let courseDescriptor = FetchDescriptor<Course>()
+        let existingCourses = (try? context.fetch(courseDescriptor)) ?? []
+        var courseMap: [String: Course] = [:]
+        for course in existingCourses {
+            courseMap[course.courseNumber] = course
+        }
+
+        var inserted = 0
+        for item in scraped {
+            guard !existingIds.contains(item.youtubeId.lowercased()) else { continue }
+
+            let lecture = Lecture(
+                title: item.title,
+                youtubeId: item.youtubeId,
+                courseNumber: item.courseNumber,
+                courseName: item.courseName,
+                department: item.department,
+                semester: item.semester,
+                year: item.year,
+                ocwUrl: item.ocwUrl,
+                topicName: item.topicName
+            )
+            context.insert(lecture)
+
+            // Link to existing course or create a new one
+            if let course = courseMap[item.courseNumber] {
+                lecture.course = course
+            } else if !item.courseNumber.isEmpty {
+                let course = Course(
+                    courseNumber: item.courseNumber,
+                    title: item.courseName,
+                    department: item.department,
+                    semester: item.semester,
+                    year: item.year
+                )
+                context.insert(course)
+                courseMap[item.courseNumber] = course
+                lecture.course = course
+            }
+
+            inserted += 1
+        }
+
+        if inserted > 0 {
+            try? context.save()
+            print("OCWScraper: merged \(inserted) new lectures")
+        }
     }
 
     // MARK: - Seed Data Loader
