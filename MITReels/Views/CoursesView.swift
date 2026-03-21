@@ -3,15 +3,19 @@ import SwiftData
 
 /// Courses tab — browse all courses grouped by department.
 /// NavigationStack with search bar. Tap a course to enter its lecture reels feed.
+/// Filters by enabled sources from SourceSettings.
 struct CoursesView: View {
     @Query(sort: \Course.department) private var courses: [Course]
     @State private var searchText = ""
+    @State private var showingSettings = false
+    private var settings = SourceSettings.shared
 
-    /// Group courses by department for sectioned list
+    /// Courses filtered by enabled sources, then by search text, grouped by department
     private var groupedCourses: [(department: String, courses: [Course])] {
+        let sourceFiltered = courses.filter { settings.isEnabled($0.source) }
         let filtered = searchText.isEmpty
-            ? courses
-            : courses.filter {
+            ? sourceFiltered
+            : sourceFiltered.filter {
                 $0.title.localizedCaseInsensitiveContains(searchText)
                 || $0.courseNumber.localizedCaseInsensitiveContains(searchText)
                 || $0.department.localizedCaseInsensitiveContains(searchText)
@@ -52,6 +56,18 @@ struct CoursesView: View {
             }
             .navigationTitle("Courses")
             .searchable(text: $searchText, prompt: "Search courses...")
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+            }
             .overlay {
                 if courses.isEmpty {
                     ContentUnavailableView(

@@ -10,6 +10,7 @@ final class Course {
     var department: String = ""
     var semester: String = ""
     var year: Int = 0
+    var source: String = "mit-ocw"
 
     /// CloudKit requires optional relationship with @Relationship inverse
     @Relationship(deleteRule: .cascade, inverse: \Lecture.course)
@@ -20,12 +21,14 @@ final class Course {
         title: String,
         department: String,
         semester: String = "",
-        year: Int = 0
+        year: Int = 0,
+        source: String = "mit-ocw"
     ) {
         self.courseNumber = courseNumber
         self.title = title
         self.department = department
         self.semester = semester
         self.year = year
+        self.source = source
     }
 }

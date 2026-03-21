@@ -39,3 +39,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
+
+# Debug screenshots
+safari_test.png
+simulator_screenshot*.png
+
+# Data pipeline cache
+tools/.cache/

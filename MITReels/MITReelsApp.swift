@@ -26,15 +26,11 @@ struct MITReelsApp: App {
 
     // MARK: - Seed Data Loader
 
-    /// Loads bundled seed_data.json into SwiftData on first launch.
-    /// Uses mainContext so @Query sees the data immediately.
-    /// Checks if any lectures exist — if so, skips seeding (idempotent).
+    /// Loads bundled seed_data.json into SwiftData.
+    /// Uses seed versioning: if the bundled seedVersion is higher than what's stored
+    /// in UserDefaults, deletes all existing data and re-seeds.
     @MainActor
     private static func seedDataIfNeeded(context: ModelContext) {
-        let descriptor = FetchDescriptor<Lecture>()
-        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
-
         guard let url = Bundle.main.url(forResource: "seed_data", withExtension: "json"),
               let data = try? Data(contentsOf: url) else {
             print("seed_data.json not found in bundle")
@@ -46,6 +42,22 @@ struct MITReelsApp: App {
             return
         }
 
+        let storedVersion = UserDefaults.standard.integer(forKey: "seedDataVersion")
+        let bundledVersion = seed.seedVersion ?? 1
+
+        // Skip if already seeded with this version
+        if storedVersion >= bundledVersion {
+            let descriptor = FetchDescriptor<Lecture>()
+            let existingCount = (try? context.fetchCount(descriptor)) ?? 0
+            if existingCount > 0 { return }
+        }
+
+        // Clear existing data for re-seed
+        if storedVersion > 0 {
+            try? context.delete(model: Lecture.self)
+            try? context.delete(model: Course.self)
+        }
+
         // Insert courses first, build lookup by courseNumber
         var courseMap: [String: Course] = [:]
         for seedCourse in seed.courses {
@@ -54,7 +66,8 @@ struct MITReelsApp: App {
                 title: seedCourse.title,
                 department: seedCourse.department,
                 semester: seedCourse.semester,
-                year: seedCourse.year
+                year: seedCourse.year,
+                source: seedCourse.source ?? "mit-ocw"
             )
             context.insert(course)
             courseMap[seedCourse.courseNumber] = course
@@ -71,7 +84,9 @@ struct MITReelsApp: App {
                 semester: seedLecture.semester,
                 year: seedLecture.year,
                 ocwUrl: seedLecture.ocwUrl,
-                topicName: seedLecture.topicName
+                topicName: seedLecture.topicName,
+                lectureNumber: seedLecture.lectureNumber ?? 0,
+                source: seedLecture.source ?? "mit-ocw"
             )
             context.insert(lecture)
 
@@ -81,7 +96,8 @@ struct MITReelsApp: App {
         }
 
         try? context.save()
-        print("Seeded \(seed.lectures.count) lectures across \(seed.courses.count) courses")
+        UserDefaults.standard.set(bundledVersion, forKey: "seedDataVersion")
+        print("Seeded \(seed.lectures.count) lectures across \(seed.courses.count) courses (v\(bundledVersion))")
     }
 }
 
@@ -90,6 +106,14 @@ struct MITReelsApp: App {
 private struct SeedData: Decodable {
     let lectures: [SeedLecture]
     let courses: [SeedCourse]
+    let seedVersion: Int?
+    let sources: [SeedSource]?
+}
+
+private struct SeedSource: Decodable {
+    let id: String
+    let name: String
+    let enabled: Bool
 }
 
 private struct SeedLecture: Decodable {
@@ -102,6 +126,8 @@ private struct SeedLecture: Decodable {
     let year: Int
     let ocwUrl: String
     let topicName: String
+    let lectureNumber: Int?
+    let source: String?
 }
 
 private struct SeedCourse: Decodable {
@@ -110,4 +136,5 @@ private struct SeedCourse: Decodable {
     let department: String
     let semester: String
     let year: Int
+    let source: String?
 }

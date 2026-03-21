@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Course-specific lecture reels — same TikTok-style paging but filtered to one course.
-/// Navigated to from CoursesView when user taps a specific course.
+/// Sorted by lectureNumber for sequential viewing.
 struct CourseReelsView: View {
     let course: Course
 
     private var lectures: [Lecture] {
-        course.lectures ?? []
+        (course.lectures ?? []).sorted { $0.lectureNumber < $1.lectureNumber }
     }
 
     var body: some View {
@@ -29,10 +29,14 @@ struct CourseReelsView: View {
                 }
                 .scrollTargetBehavior(.paging)
                 .scrollIndicators(.hidden)
+                #if os(iOS)
                 .ignoresSafeArea(edges: .bottom)
+                #endif
             }
         }
         .navigationTitle(course.courseNumber)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

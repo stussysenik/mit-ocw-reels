@@ -21,6 +21,14 @@ struct ReelView: View {
 
             // Course info card pinned at bottom
             VStack(alignment: .leading, spacing: 8) {
+                // Lecture number caption
+                if lecture.lectureNumber > 0 {
+                    Text("Lecture \(lecture.lectureNumber)")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.red)
+                }
+
                 Text(lecture.title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -38,14 +46,19 @@ struct ReelView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                if !lecture.topicName.isEmpty {
-                    Text(lecture.topicName)
-                        .font(.caption2)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.red.opacity(0.1))
-                        .foregroundStyle(.red)
-                        .clipShape(Capsule())
+                HStack(spacing: 8) {
+                    if !lecture.topicName.isEmpty {
+                        Text(lecture.topicName)
+                            .font(.caption2)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.red.opacity(0.1))
+                            .foregroundStyle(.red)
+                            .clipShape(Capsule())
+                    }
+
+                    // Source badge
+                    sourceBadge
                 }
             }
             .padding()
@@ -55,6 +68,34 @@ struct ReelView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(.background)
+    }
+
+    @ViewBuilder
+    private var sourceBadge: some View {
+        let icon: String = switch lecture.source {
+        case "mit-ocw": "building.columns"
+        case "yale": "book.closed"
+        case "harvard": "graduationcap"
+        case "stanford": "sparkles"
+        case "oxford": "building"
+        default: "globe"
+        }
+        let name: String = switch lecture.source {
+        case "mit-ocw": "MIT OCW"
+        case "yale": "Yale"
+        case "harvard": "Harvard"
+        case "stanford": "Stanford"
+        case "oxford": "Oxford"
+        default: lecture.source
+        }
+
+        Label(name, systemImage: icon)
+            .font(.caption2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.blue.opacity(0.1))
+            .foregroundStyle(.blue)
+            .clipShape(Capsule())
     }
 }
