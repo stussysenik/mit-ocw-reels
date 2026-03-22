@@ -34,7 +34,7 @@ struct CoursesView: View {
             }
             guard !schoolCourses.isEmpty else { return nil }
             let lectureCount = schoolCourses.reduce(0) { $0 + ($1.lectures?.count ?? 0) }
-            let departments = Array(Set(schoolCourses.map(\.department))).sorted()
+            let departments = Array(Set(schoolCourses.map(\.department))).filter { !$0.isEmpty }.sorted()
             return (school: school, courses: schoolCourses, lectureCount: lectureCount, departments: departments)
         }
     }

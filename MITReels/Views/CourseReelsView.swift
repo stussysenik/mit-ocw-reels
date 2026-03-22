@@ -7,6 +7,8 @@ import SwiftUI
 /// the course context is already visible in the navigation bar.
 struct CourseReelsView: View {
     let course: Course
+    /// Optional starting lecture — when set, scrolls to this lecture on appear (from Discover feed).
+    var initialLectureId: String? = nil
     @State private var visibleId: String?
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
 
@@ -52,7 +54,12 @@ struct CourseReelsView: View {
         }
         .navigationTitle(course.courseNumber)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { haptic.prepare() }
+        .onAppear {
+            haptic.prepare()
+            if let initialId = initialLectureId, visibleId == nil {
+                visibleId = initialId
+            }
+        }
         .onChange(of: visibleId) { _, _ in
             haptic.impactOccurred()
             haptic.prepare()

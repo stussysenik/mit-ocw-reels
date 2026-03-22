@@ -2,23 +2,22 @@ import SwiftUI
 
 /// Compact grid card for a course in the 2-column grid view.
 ///
-/// Shows a video placeholder, course number, title, and lecture count.
+/// Shows a video thumbnail, course number, title, lecture count, and semester.
 /// Used inside SchoolDetailView's grid mode.
+///
+/// O(1) rendering: thumbnail video ID is cached on appear, not recomputed per render.
 struct CourseGridItemView: View {
     let course: Course
     let school: MITSchool
 
-    private var thumbnailVideoId: String? {
-        course.lectures?
-            .first(where: { !$0.youtubeId.isEmpty })?
-            .youtubeId
-    }
+    /// Cached on appear — avoids .filter().sorted() on every render.
+    @State private var cachedThumbnailId: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             ZStack {
-                if let thumbnailVideoId {
-                    YouTubeThumbnailView(videoId: thumbnailVideoId)
+                if let thumbnailId = cachedThumbnailId {
+                    YouTubeThumbnailView(videoId: thumbnailId)
                 } else {
                     RoundedRectangle(cornerRadius: Radius.badge)
                         .fill(CarbonColor.layerHover)
@@ -48,14 +47,34 @@ struct CourseGridItemView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
-            if let count = course.lectures?.count, count > 0 {
-                Text("\(count) lecture\(count == 1 ? "" : "s")")
-                    .font(.caption2)
-                    .foregroundStyle(CarbonColor.textPlaceholder)
+            HStack(spacing: 4) {
+                if let count = course.lectures?.count, count > 0 {
+                    Text("\(count) lecture\(count == 1 ? "" : "s")")
+                        .font(.caption2)
+                        .foregroundStyle(CarbonColor.textPlaceholder)
+                }
+
+                if !course.semester.isEmpty && course.year > 0 {
+                    Text("\u{00B7}")
+                        .font(.caption2)
+                        .foregroundStyle(CarbonColor.textTertiary)
+                    Text("\(course.semester) \(String(course.year))")
+                        .font(.caption2)
+                        .foregroundStyle(CarbonColor.textPlaceholder)
+                }
             }
         }
         .padding(Spacing.xs)
         .background(CarbonColor.layer01)
         .clipShape(RoundedRectangle(cornerRadius: Radius.search))
+        .onAppear {
+            cachedThumbnailId = course.lectures?
+                .filter { !$0.youtubeId.isEmpty
+                          && !$0.title.lowercased().hasSuffix(".pdf")
+                          && $0.title != "Unknown" }
+                .sorted { $0.title.count > $1.title.count }
+                .first?
+                .youtubeId
+        }
     }
 }

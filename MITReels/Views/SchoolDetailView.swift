@@ -1,34 +1,27 @@
 import SwiftUI
 
-/// Per-school course browser with list/grid toggle and search.
+/// Per-school course browser with list/grid toggle, search, and department filter.
 ///
 /// Navigated to from CoursesView's School Hub when user taps a school card.
-/// Courses are grouped by department within the school. Users can switch
-/// between list and grid views via a segmented picker in the toolbar.
+/// Courses are grouped by department within the school. Users can:
+/// - Switch between list and grid views via toolbar picker
+/// - Filter by department via tappable section headers (list) or pill bar (grid)
+/// - Search across title, courseNumber, department
 struct SchoolDetailView: View {
     let school: MITSchool
     let courses: [Course]
 
     @State private var searchText = ""
+    @State private var selectedDepartment: String? = nil
     @AppStorage("courseViewMode") private var viewMode = "list"
 
-    private var filteredCourses: [Course] {
-        let sorted = courses.sorted { $0.courseNumber < $1.courseNumber }
-        guard !searchText.isEmpty else { return sorted }
-        return sorted.filter {
-            $0.title.localizedCaseInsensitiveContains(searchText)
-            || $0.courseNumber.localizedCaseInsensitiveContains(searchText)
-            || $0.department.localizedCaseInsensitiveContains(searchText)
-        }
-    }
+    // MARK: - Cached Computed Data (O(1) per render)
 
-    /// Courses grouped by department for the list view.
-    private var groupedByDepartment: [(department: String, courses: [Course])] {
-        let byDept = Dictionary(grouping: filteredCourses, by: \.department)
-        return byDept
-            .sorted { $0.key < $1.key }
-            .map { (department: $0.key, courses: $0.value) }
-    }
+    @State private var cachedGroups: [(department: String, courses: [Course])] = []
+    @State private var cachedDepartments: [String] = []
+
+    /// O(1) per render — updated in recomputeGroups() and toggleDepartment().
+    @State private var cachedDisplayedCourses: [Course] = []
 
     var body: some View {
         Group {
@@ -50,25 +43,92 @@ struct SchoolDetailView: View {
                 .frame(width: 100)
             }
         }
+        .onAppear { recomputeGroups() }
+        .onChange(of: searchText) { _, _ in recomputeGroups() }
+    }
+
+    // MARK: - Data Computation
+
+    private func recomputeGroups() {
+        let sorted = courses.sorted { $0.courseNumber < $1.courseNumber }
+        let filtered: [Course]
+        if searchText.isEmpty {
+            filtered = sorted
+        } else {
+            filtered = sorted.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText)
+                || $0.courseNumber.localizedCaseInsensitiveContains(searchText)
+                || $0.department.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+
+        // Filter out courses with empty department names
+        let withDept = filtered.filter { !$0.department.isEmpty }
+
+        let byDept = Dictionary(grouping: withDept, by: \.department)
+        cachedGroups = byDept
+            .sorted { $0.key < $1.key }
+            .map { (department: $0.key, courses: $0.value) }
+        cachedDepartments = cachedGroups.map(\.department)
+
+        // Clear department filter if it no longer exists in filtered results
+        if let sel = selectedDepartment, !cachedDepartments.contains(sel) {
+            selectedDepartment = nil
+        }
+
+        updateDisplayedCourses()
+    }
+
+    private func updateDisplayedCourses() {
+        if let dept = selectedDepartment {
+            cachedDisplayedCourses = cachedGroups.first(where: { $0.department == dept })?.courses ?? []
+        } else {
+            cachedDisplayedCourses = cachedGroups.flatMap(\.courses)
+        }
+    }
+
+    private func toggleDepartment(_ dept: String) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedDepartment = selectedDepartment == dept ? nil : dept
+            updateDisplayedCourses()
+        }
     }
 
     // MARK: - List View
 
     private var listView: some View {
         List {
-            ForEach(groupedByDepartment, id: \.department) { dept in
+            ForEach(cachedGroups, id: \.department) { dept in
                 Section {
-                    ForEach(dept.courses, id: \.courseNumber) { course in
-                        NavigationLink(destination: CourseReelsView(course: course)) {
-                            courseRow(course)
+                    if selectedDepartment == nil || selectedDepartment == dept.department {
+                        ForEach(dept.courses, id: \.courseNumber) { course in
+                            NavigationLink(destination: CourseReelsView(course: course)) {
+                                courseRow(course)
+                            }
+                            .listRowBackground(CarbonColor.layer01)
+                            .listRowSeparator(.hidden)
                         }
-                        .listRowBackground(CarbonColor.layer01)
-                        .listRowSeparator(.hidden)
                     }
                 } header: {
-                    Text(dept.department)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(school.color)
+                    Button { toggleDepartment(dept.department) } label: {
+                        HStack {
+                            Text(dept.department)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(school.color)
+
+                            Spacer()
+
+                            if selectedDepartment == dept.department {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(CarbonColor.textPlaceholder)
+                            }
+
+                            Text("\(dept.courses.count)")
+                                .font(.caption2.weight(.medium).monospacedDigit())
+                                .foregroundStyle(CarbonColor.textPlaceholder)
+                        }
+                    }
                 }
             }
         }
@@ -81,21 +141,53 @@ struct SchoolDetailView: View {
 
     private var gridView: some View {
         ScrollView {
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: Spacing.sm),
-                GridItem(.flexible(), spacing: Spacing.sm)
-            ], spacing: Spacing.sm) {
-                ForEach(filteredCourses, id: \.courseNumber) { course in
-                    NavigationLink(destination: CourseReelsView(course: course)) {
-                        CourseGridItemView(course: course, school: school)
-                    }
-                    .buttonStyle(.plain)
+            VStack(spacing: 0) {
+                // Department filter pills
+                if cachedDepartments.count > 1 {
+                    departmentFilterBar
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.vertical, Spacing.sm)
                 }
+
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: Spacing.sm),
+                    GridItem(.flexible(), spacing: Spacing.sm)
+                ], spacing: Spacing.sm) {
+                    ForEach(cachedDisplayedCourses, id: \.courseNumber) { course in
+                        NavigationLink(destination: CourseReelsView(course: course)) {
+                            CourseGridItemView(course: course, school: school)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
         }
         .background(CarbonColor.background)
+    }
+
+    private var departmentFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.xs) {
+                ForEach(cachedDepartments, id: \.self) { dept in
+                    let isSelected = selectedDepartment == dept
+                    Button { toggleDepartment(dept) } label: {
+                        Text(dept)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(isSelected ? .white : CarbonColor.textSecondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                isSelected
+                                    ? AnyShapeStyle(school.color)
+                                    : AnyShapeStyle(CarbonColor.layerHover)
+                            )
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Course Row
