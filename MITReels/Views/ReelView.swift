@@ -199,7 +199,7 @@ struct ReelView: View {
 
     private var videoPlayer: some View {
         ZStack(alignment: .bottom) {
-            ZStack {
+            ZStack(alignment: .topTrailing) {
                 YouTubeThumbnailView(videoId: lecture.youtubeId)
                     .overlay {
                         if isVisible && isVideoLoading && !hasVideoError {
@@ -246,6 +246,19 @@ struct ReelView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(CarbonColor.layerHover)
                     .transition(.opacity)
+                }
+
+                // YouTube deep-link — top-right corner of video
+                if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
+                    Link(destination: ytURL) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    .padding(Spacing.sm)
                 }
             }
 
