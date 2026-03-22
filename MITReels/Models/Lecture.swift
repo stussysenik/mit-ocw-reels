@@ -15,6 +15,7 @@ final class Lecture {
     var year: Int = 0
     var ocwUrl: String = ""
     var topicName: String = ""
+    var instructor: String = ""
 
     /// Inverse relationship — CloudKit requires optional + inverse on both sides
     var course: Course?
@@ -28,7 +29,8 @@ final class Lecture {
         semester: String = "",
         year: Int = 0,
         ocwUrl: String = "",
-        topicName: String = ""
+        topicName: String = "",
+        instructor: String = ""
     ) {
         self.title = title
         self.youtubeId = youtubeId
@@ -39,5 +41,6 @@ final class Lecture {
         self.year = year
         self.ocwUrl = ocwUrl
         self.topicName = topicName
+        self.instructor = instructor
     }
 }

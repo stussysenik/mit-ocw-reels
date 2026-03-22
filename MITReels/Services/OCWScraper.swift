@@ -13,15 +13,30 @@ struct ScrapedLecture: Codable, Hashable {
     let year: Int
     let ocwUrl: String
     let topicName: String
+    let instructor: String
+}
+
+/// YouTube oEmbed response — used to validate video availability and extract metadata.
+struct OEmbedResult: Decodable {
+    let title: String
+    let authorName: String
+    let thumbnailUrl: String
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case authorName = "author_name"
+        case thumbnailUrl = "thumbnail_url"
+    }
 }
 
 // MARK: - OCW Scraper
 
 /// On-device MIT OCW video catalog scraper.
 ///
-/// Uses a two-phase pipeline:
+/// Uses a three-phase pipeline:
 ///   1. Parse sitemap index → fetch all course sitemaps (parallel)
 ///   2. Extract YouTube IDs from resource page transcript filenames (parallel)
+///   3. Validate each video via YouTube oEmbed API (only valid videos pass)
 ///
 /// Designed for Swift concurrency: URLSession + async/await + TaskGroup.
 /// Zero external dependencies — Foundation only.
@@ -52,26 +67,19 @@ actor OCWScraper {
 
     // MARK: - Public API
 
-    /// Scrape the full MIT OCW catalog. Returns all discovered lectures.
-    ///
-    /// ```swift
-    /// let scraper = OCWScraper()
-    /// let lectures = try await scraper.scrapeAll()
-    /// // Insert into SwiftData...
-    /// ```
+    /// Scrape the full MIT OCW catalog. Returns only validated, playable lectures.
     func scrapeAll() async throws -> [ScrapedLecture] {
         // Phase 1: Get all course sitemap URLs
         let courseSitemaps = try await fetchSitemapIndex()
         totalCourses = courseSitemaps.count
 
-        // Phase 2: Scrape each course in parallel with bounded concurrency
+        // Phase 2+3: Scrape each course in parallel with bounded concurrency
         var allLectures: [ScrapedLecture] = []
 
         try await withThrowingTaskGroup(of: [ScrapedLecture].self) { group in
             var inFlight = 0
 
             for entry in courseSitemaps {
-                // Throttle: wait for a slot to open
                 if inFlight >= maxConcurrency {
                     if let lectures = try await group.next() {
                         allLectures.append(contentsOf: lectures)
@@ -85,7 +93,6 @@ actor OCWScraper {
                 inFlight += 1
             }
 
-            // Collect remaining
             for try await lectures in group {
                 allLectures.append(contentsOf: lectures)
             }
@@ -103,6 +110,11 @@ actor OCWScraper {
         return deduped
     }
 
+    /// Validate a single YouTube video ID via oEmbed. Returns nil if unavailable.
+    func validateVideo(_ youtubeId: String) async -> OEmbedResult? {
+        await validateYoutubeVideo(youtubeId)
+    }
+
     // MARK: - Sitemap Parsing
 
     private struct CourseSitemapEntry {
@@ -114,7 +126,6 @@ actor OCWScraper {
         let year: Int
     }
 
-    /// Parse the root sitemap index to discover all course sitemaps.
     private func fetchSitemapIndex() async throws -> [CourseSitemapEntry] {
         let (data, _) = try await session.data(from: sitemapIndexURL)
         let xml = String(data: data, encoding: .utf8) ?? ""
@@ -144,7 +155,6 @@ actor OCWScraper {
         }
     }
 
-    /// Fetch a single course's sitemap and return its resource URLs.
     private func fetchCourseSitemap(_ url: URL) async throws -> [URL] {
         let (data, _) = try await session.data(from: url)
         let xml = String(data: data, encoding: .utf8) ?? ""
@@ -162,7 +172,6 @@ actor OCWScraper {
 
     // MARK: - Course Scraping
 
-    /// Scrape all videos from a single course.
     private func scrapeCourse(_ entry: CourseSitemapEntry) async throws -> [ScrapedLecture] {
         let resourceURLs: [URL]
         do {
@@ -174,7 +183,6 @@ actor OCWScraper {
 
         var lectures: [ScrapedLecture] = []
 
-        // Scrape resource pages sequentially within a course (already parallel across courses)
         for url in resourceURLs {
             if let lecture = await scrapeResourcePage(url, course: entry) {
                 lectures.append(lecture)
@@ -186,7 +194,8 @@ actor OCWScraper {
         return lectures
     }
 
-    /// Fetch a resource page and extract YouTube ID from transcript filename.
+    /// Fetch a resource page, extract YouTube ID, and validate via oEmbed.
+    /// Only returns a lecture if the video is confirmed playable.
     private func scrapeResourcePage(
         _ url: URL,
         course: CourseSitemapEntry
@@ -197,7 +206,13 @@ actor OCWScraper {
 
             guard let youtubeId = extractYoutubeId(from: html) else { return nil }
 
+            // Validate video exists and is playable via YouTube oEmbed API
+            guard let oEmbed = await validateYoutubeVideo(youtubeId) else { return nil }
+
             let title = extractTitle(from: html)
+
+            // Use oEmbed author_name as instructor (often "MIT OpenCourseWare")
+            let instructor = oEmbed.authorName
 
             return ScrapedLecture(
                 title: title,
@@ -208,8 +223,29 @@ actor OCWScraper {
                 semester: course.semester,
                 year: course.year,
                 ocwUrl: url.absoluteString,
-                topicName: ""
+                topicName: "",
+                instructor: instructor
             )
+        } catch {
+            return nil
+        }
+    }
+
+    // MARK: - YouTube oEmbed Validation
+
+    /// Validates a YouTube video ID via the public oEmbed API.
+    /// Returns nil if the video is unavailable, deleted, or private.
+    /// No API key required — this is a public endpoint.
+    private func validateYoutubeVideo(_ youtubeId: String) async -> OEmbedResult? {
+        let urlString = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=\(youtubeId)&format=json"
+        guard let url = URL(string: urlString) else { return nil }
+
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                return nil
+            }
+            return try JSONDecoder().decode(OEmbedResult.self, from: data)
         } catch {
             return nil
         }
@@ -218,13 +254,13 @@ actor OCWScraper {
     // MARK: - Extraction
 
     /// Extract YouTube ID from transcript/caption filename in page HTML.
-    /// Pattern: {32-char-hash}_{11-char-YouTubeID}.(pdf|srt|vtt)
+    /// Pattern: {32-char-hash}_{11-char-YouTubeID}.(srt|vtt|webvtt)
+    /// Note: .pdf excluded — PDF transcript files are not video resources.
     private func extractYoutubeId(from html: String) -> String? {
-        // Primary: transcript filename
-        if let range = html.range(of: #"[a-f0-9]{32}_([A-Za-z0-9_\-]{11})\.(pdf|srt|vtt|webvtt)"#,
+        // Primary: transcript filename (srt/vtt only — not PDFs)
+        if let range = html.range(of: #"[a-f0-9]{32}_([A-Za-z0-9_\-]{11})\.(srt|vtt|webvtt)"#,
                                   options: .regularExpression) {
             let match = String(html[range])
-            // Extract the 11-char ID after the underscore
             let parts = match.split(separator: "_")
             if parts.count >= 2 {
                 let idWithExt = String(parts.last ?? "")
@@ -284,7 +320,6 @@ actor OCWScraper {
     }
 
     private func parseCourseSlug(_ slug: String) -> ParsedSlug {
-        // e.g. "6-006-introduction-to-algorithms-spring-2020"
         let semesterPattern = #"(spring|fall|january|summer|iap)-(\d{4})$"#
 
         var semester = ""
@@ -304,12 +339,20 @@ actor OCWScraper {
             }
         }
 
-        // Extract course number (leading digits with dots/dashes)
-        let numberPattern = #"^([\d]+-[\d\w]*)"#
+        let alphaPattern = #"^([a-z]+-[a-z]?\d[\d\w]*(?:-[\d\w]+)*)"#
+        let numericPattern = #"^([\d]+-[\d\w]*)"#
         var courseNumber = ""
         var courseName = nameSlug
 
-        if let range = nameSlug.range(of: numberPattern, options: .regularExpression) {
+        if let range = nameSlug.range(of: alphaPattern, options: .regularExpression) {
+            courseNumber = String(nameSlug[range])
+                .uppercased()
+                .replacingOccurrences(of: "-", with: ".")
+            let remainder = String(nameSlug[range.upperBound...])
+            if remainder.hasPrefix("-") {
+                courseName = String(remainder.dropFirst())
+            }
+        } else if let range = nameSlug.range(of: numericPattern, options: .regularExpression) {
             courseNumber = String(nameSlug[range])
                 .uppercased()
                 .replacingOccurrences(of: "-", with: ".")

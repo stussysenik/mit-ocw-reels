@@ -3,9 +3,10 @@ import SwiftData
 
 /// App entry point — configures SwiftData ModelContainer and seeds data on first launch.
 ///
-/// Two-phase content pipeline:
+/// Three-phase content pipeline:
 ///   1. Synchronous seed from bundled seed_data.json (instant content on first launch)
-///   2. Background OCW scraper expands the catalog from live MIT OCW sitemaps
+///   2. Background oEmbed validation removes unavailable videos from seed data
+///   3. Background OCW scraper expands the catalog (only validated videos inserted)
 @main
 struct MITReelsApp: App {
     let container: ModelContainer
@@ -14,6 +15,7 @@ struct MITReelsApp: App {
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
             MITReelsApp.seedDataIfNeeded(context: container.mainContext)
+            MITReelsApp.startBackgroundValidation(container: container)
             MITReelsApp.startBackgroundScrape(container: container)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
@@ -27,10 +29,59 @@ struct MITReelsApp: App {
         .modelContainer(container)
     }
 
+    // MARK: - Background Video Validation
+
+    /// Validates existing seed data videos via YouTube oEmbed API.
+    /// Removes lectures whose videos are no longer available.
+    /// Runs once per app install (tracked via UserDefaults).
+    private static func startBackgroundValidation(container: ModelContainer) {
+        guard !UserDefaults.standard.bool(forKey: "seedDataValidated") else { return }
+
+        Task.detached {
+            let scraper = OCWScraper()
+
+            let lecturesToValidate: [Lecture] = await MainActor.run {
+                let descriptor = FetchDescriptor<Lecture>()
+                return (try? container.mainContext.fetch(descriptor)) ?? []
+            }
+
+            var invalidIds: [String] = []
+            for lecture in lecturesToValidate {
+                let result = await scraper.validateVideo(lecture.youtubeId)
+                if result == nil {
+                    invalidIds.append(lecture.youtubeId)
+                }
+                // Also update instructor from oEmbed if available
+                if let oEmbed = result, lecture.instructor.isEmpty {
+                    await MainActor.run {
+                        lecture.instructor = oEmbed.authorName
+                    }
+                }
+            }
+
+            if !invalidIds.isEmpty {
+                await MainActor.run {
+                    let descriptor = FetchDescriptor<Lecture>()
+                    let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                    let invalidSet = Set(invalidIds.map { $0.lowercased() })
+                    for lecture in all where invalidSet.contains(lecture.youtubeId.lowercased()) {
+                        container.mainContext.delete(lecture)
+                    }
+                    try? container.mainContext.save()
+                    print("Validation: removed \(invalidIds.count) unavailable videos")
+                }
+            }
+
+            UserDefaults.standard.set(true, forKey: "seedDataValidated")
+            print("Validation: checked \(lecturesToValidate.count) videos, \(invalidIds.count) removed")
+        }
+    }
+
     // MARK: - Background Scraper
 
     /// Kicks off the OCW scraper in a detached Task after seed data is loaded.
     /// Merges newly discovered lectures into SwiftData, deduplicating by youtubeId.
+    /// Only validated (oEmbed-confirmed) videos are inserted.
     /// Throttled to once every 24 hours via UserDefaults timestamp.
     private static func startBackgroundScrape(container: ModelContainer) {
         let lastScrape = UserDefaults.standard.double(forKey: "lastScrapeTimestamp")
@@ -45,7 +96,7 @@ struct MITReelsApp: App {
             do {
                 let scraper = OCWScraper()
                 let scraped = try await scraper.scrapeAll()
-                print("OCWScraper: discovered \(scraped.count) lectures")
+                print("OCWScraper: discovered \(scraped.count) validated lectures")
 
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastScrapeTimestamp")
 
@@ -61,12 +112,10 @@ struct MITReelsApp: App {
     /// Merge scraped lectures into SwiftData, skipping duplicates by youtubeId.
     @MainActor
     private static func mergeScrapedData(_ scraped: [ScrapedLecture], into context: ModelContext) {
-        // Build set of existing YouTube IDs for fast lookup
         let descriptor = FetchDescriptor<Lecture>()
         let existing = (try? context.fetch(descriptor)) ?? []
         let existingIds = Set(existing.map { $0.youtubeId.lowercased() })
 
-        // Build course lookup
         let courseDescriptor = FetchDescriptor<Course>()
         let existingCourses = (try? context.fetch(courseDescriptor)) ?? []
         var courseMap: [String: Course] = [:]
@@ -77,6 +126,7 @@ struct MITReelsApp: App {
         var inserted = 0
         for item in scraped {
             guard !existingIds.contains(item.youtubeId.lowercased()) else { continue }
+            guard !item.courseNumber.isEmpty else { continue }
 
             let lecture = Lecture(
                 title: item.title,
@@ -87,11 +137,11 @@ struct MITReelsApp: App {
                 semester: item.semester,
                 year: item.year,
                 ocwUrl: item.ocwUrl,
-                topicName: item.topicName
+                topicName: item.topicName,
+                instructor: item.instructor
             )
             context.insert(lecture)
 
-            // Link to existing course or create a new one
             if let course = courseMap[item.courseNumber] {
                 lecture.course = course
             } else if !item.courseNumber.isEmpty {
@@ -118,9 +168,6 @@ struct MITReelsApp: App {
 
     // MARK: - Seed Data Loader
 
-    /// Loads bundled seed_data.json into SwiftData on first launch.
-    /// Uses mainContext so @Query sees the data immediately.
-    /// Checks if any lectures exist — if so, skips seeding (idempotent).
     @MainActor
     private static func seedDataIfNeeded(context: ModelContext) {
         let descriptor = FetchDescriptor<Lecture>()
@@ -138,7 +185,6 @@ struct MITReelsApp: App {
             return
         }
 
-        // Insert courses first, build lookup by courseNumber
         var courseMap: [String: Course] = [:]
         for seedCourse in seed.courses {
             let course = Course(
@@ -152,7 +198,6 @@ struct MITReelsApp: App {
             courseMap[seedCourse.courseNumber] = course
         }
 
-        // Insert lectures, linking to their parent course
         for seedLecture in seed.lectures {
             let lecture = Lecture(
                 title: seedLecture.title,
