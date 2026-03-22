@@ -9,6 +9,7 @@ import WebKit
 struct YouTubePlayerView: UIViewRepresentable {
     let videoId: String
     var autoplay: Bool = false
+    var captionsEnabled: Bool = true
     @Binding var isLoading: Bool
     @Binding var hasError: Bool
     @Binding var currentTime: Double
@@ -39,7 +40,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
 
-        let html = Self.embedHTML(videoId: videoId, autoplay: autoplay)
+        let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled)
         webView.loadHTMLString(html, baseURL: URL(string: "https://mitreels.app"))
         return webView
     }
@@ -49,7 +50,7 @@ struct YouTubePlayerView: UIViewRepresentable {
             context.coordinator.currentVideoId = videoId
             context.coordinator.hasFinishedLoad = false
             DispatchQueue.main.async { self.isLoading = true; self.hasError = false }
-            let html = Self.embedHTML(videoId: videoId, autoplay: autoplay)
+            let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled)
             webView.loadHTMLString(html, baseURL: URL(string: "https://mitreels.app"))
         }
 
@@ -76,6 +77,11 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.navigationDelegate = nil
         coordinator.webView = nil
         webView.loadHTMLString("", baseURL: nil)
+        // Flush WKWebView internal caches to reclaim memory
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+            modifiedSince: .distantPast
+        ) {}
     }
 
     // MARK: - HTML with iframe embed
@@ -86,11 +92,12 @@ struct YouTubePlayerView: UIViewRepresentable {
         return videoId.wholeMatch(of: pattern) != nil ? videoId : nil
     }
 
-    private static func embedHTML(videoId: String, autoplay: Bool) -> String {
+    private static func embedHTML(videoId: String, autoplay: Bool, captions: Bool = true) -> String {
         guard let safeId = sanitizedVideoId(videoId) else {
             return "<html><body style='background:#000'></body></html>"
         }
         let autoplayParam = autoplay ? "1" : "0"
+        let captionParams = captions ? "&cc_load_policy=1&cc_lang_pref=en" : ""
         return """
         <!DOCTYPE html>
         <html>
@@ -105,7 +112,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         <body>
         <iframe
             id="ytplayer"
-            src="https://www.youtube.com/embed/\(safeId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1&origin=https://mitreels.app"
+            src="https://www.youtube.com/embed/\(safeId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1\(captionParams)&origin=https://mitreels.app"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowfullscreen>
         </iframe>

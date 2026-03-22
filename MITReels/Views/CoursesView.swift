@@ -15,6 +15,7 @@ struct CoursesView: View {
     @State private var showSettings = false
     @State private var cachedSchoolData: [(school: MITSchool, courses: [Course], lectureCount: Int, departments: [String])] = []
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
+    @AppStorage("captionsEnabled") private var captionsEnabled = true
     @AppStorage("courseViewMode") private var courseViewMode = "list"
 
     private func recomputeSchoolData() {
@@ -116,6 +117,23 @@ struct CoursesView: View {
                     }
                     .tint(CarbonColor.interactive)
                     .accessibilityIdentifier("autoplayToggle")
+
+                    Toggle(isOn: $captionsEnabled) {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "captions.bubble")
+                                .foregroundStyle(CarbonColor.interactive)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Captions")
+                                    .font(.body)
+                                    .foregroundStyle(CarbonColor.textPrimary)
+                                Text("Show English subtitles on lecture videos")
+                                    .font(.caption)
+                                    .foregroundStyle(CarbonColor.textSecondary)
+                            }
+                        }
+                    }
+                    .tint(CarbonColor.interactive)
+                    .accessibilityIdentifier("captionsToggle")
                 } header: {
                     Text("Playback")
                         .font(.caption2)

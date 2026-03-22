@@ -13,6 +13,7 @@ struct CourseReelsView: View {
     @State private var cachedLectures: [Lecture] = []
     @State private var hasScrolled = false
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
+    @AppStorage("captionsEnabled") private var captionsEnabled = true
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
@@ -35,7 +36,8 @@ struct CourseReelsView: View {
                                 lecture: lecture,
                                 lectureIndex: index,
                                 isVisible: visibleId == lecture.youtubeId,
-                                autoplayEnabled: autoplayEnabled
+                                autoplayEnabled: autoplayEnabled,
+                                captionsEnabled: captionsEnabled
                             )
                             .containerRelativeFrame(.vertical)
                             .id(lecture.youtubeId)

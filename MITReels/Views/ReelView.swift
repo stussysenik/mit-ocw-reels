@@ -16,6 +16,9 @@ struct ReelView: View {
     /// When false, videos won't auto-play on scroll — user must tap play manually.
     var autoplayEnabled: Bool = true
 
+    /// When true, YouTube captions are auto-enabled (English).
+    var captionsEnabled: Bool = true
+
     /// Callback when user taps the metadata line to navigate to the parent course.
     var onViewCourse: ((Lecture) -> Void)? = nil
 
@@ -36,12 +39,14 @@ struct ReelView: View {
         lectureIndex: Int? = nil,
         isVisible: Bool = false,
         autoplayEnabled: Bool = true,
+        captionsEnabled: Bool = true,
         onViewCourse: ((Lecture) -> Void)? = nil
     ) {
         self.lecture = lecture
         self.lectureIndex = lectureIndex
         self.isVisible = isVisible
         self.autoplayEnabled = autoplayEnabled
+        self.captionsEnabled = captionsEnabled
         self.onViewCourse = onViewCourse
 
         self.school = MITSchool.from(courseNumber: lecture.courseNumber)
@@ -202,6 +207,7 @@ struct ReelView: View {
                     YouTubePlayerView(
                         videoId: lecture.youtubeId,
                         autoplay: autoplayEnabled,
+                        captionsEnabled: captionsEnabled,
                         isLoading: $isVideoLoading,
                         hasError: $hasVideoError,
                         currentTime: $currentTime,

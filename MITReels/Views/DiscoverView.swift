@@ -19,6 +19,7 @@ struct DiscoverView: View {
     @State private var navigateToLectureId: String?
 
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
+    @AppStorage("captionsEnabled") private var captionsEnabled = true
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
@@ -43,6 +44,7 @@ struct DiscoverView: View {
                                     lecture: lecture,
                                     isVisible: visibleId == lecture.youtubeId,
                                     autoplayEnabled: autoplayEnabled,
+                                    captionsEnabled: captionsEnabled,
                                     onViewCourse: { tappedLecture in
                                         navigateToLectureId = tappedLecture.youtubeId
                                         navigateToCourse = tappedLecture.course
@@ -86,6 +88,10 @@ struct DiscoverView: View {
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            // Flush caches on memory pressure to prevent Jetsam kill
+            URLCache.shared.removeAllCachedResponses()
         }
     }
 

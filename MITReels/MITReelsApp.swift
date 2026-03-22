@@ -12,6 +12,10 @@ struct MITReelsApp: App {
     let container: ModelContainer
 
     init() {
+        // Cap URL cache to prevent unbounded memory growth from thumbnails
+        URLCache.shared.memoryCapacity = 50 * 1024 * 1024   // 50 MB
+        URLCache.shared.diskCapacity = 100 * 1024 * 1024     // 100 MB
+
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
             MITReelsApp.seedDataIfNeeded(context: container.mainContext)
@@ -47,14 +51,14 @@ struct MITReelsApp: App {
                 return all.map { ($0.youtubeId, $0.instructor.isEmpty) }
             }
 
-            // Validate concurrently (bounded to 8) instead of sequentially
+            // Validate concurrently (bounded to 4 to limit peak memory)
             var invalidIds: [String] = []
             var instructorUpdates: [(id: String, name: String)] = []
 
             await withTaskGroup(of: (String, Bool, OEmbedResult?).self) { group in
                 var inFlight = 0
                 for entry in videoEntries {
-                    if inFlight >= 8 {
+                    if inFlight >= 4 {
                         if let (id, needed, result) = await group.next() {
                             if result == nil { invalidIds.append(id) }
                             else if needed, let r = result { instructorUpdates.append((id, r.authorName)) }
