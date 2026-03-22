@@ -101,10 +101,18 @@ struct DiscoverView: View {
     /// Note: Does NOT filter by thumbnail quality — thumbnails are cosmetic.
     /// The video player has its own error state for truly unavailable videos.
     static func filterValidLectures(_ lectures: [Lecture]) -> [Lecture] {
-        lectures.filter { lecture in
-            !lecture.title.lowercased().hasSuffix(".pdf")
-            && !lecture.youtubeId.isEmpty
-            && !lecture.courseNumber.isEmpty
+        var seen = Set<String>()
+        return lectures.filter { lecture in
+            let id = lecture.youtubeId.lowercased()
+            guard !id.isEmpty,
+                  !seen.contains(id),
+                  !lecture.courseNumber.isEmpty,
+                  !lecture.title.lowercased().hasSuffix(".pdf"),
+                  !lecture.title.lowercased().contains("3play"),
+                  !lecture.title.lowercased().contains("caption file")
+            else { return false }
+            seen.insert(id)
+            return true
         }
     }
 }

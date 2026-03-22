@@ -133,9 +133,9 @@ struct ReelView: View {
                 onViewCourse?(lecture)
             }
 
-            // OCW links — course page, syllabus, readings
-            if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
-                HStack(spacing: Spacing.md) {
+            // OCW + YouTube links
+            HStack(spacing: Spacing.md) {
+                if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
                     ForEach(Self.ocwLinks(base: courseBase), id: \.label) { link in
                         Link(destination: link.url) {
                             Label(link.label, systemImage: link.icon)
@@ -144,10 +144,18 @@ struct ReelView: View {
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, Spacing.xs)
+
+                if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
+                    Link(destination: ytURL) {
+                        Label("YouTube", systemImage: "play.rectangle.fill")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(CarbonColor.textLabel)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.xs)
 
             Spacer(minLength: 0)
         }

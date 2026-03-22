@@ -28,6 +28,7 @@ struct YouTubePlayerView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
+        config.websiteDataStore = .nonPersistent()  // Ephemeral — no cache accumulation
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.preferences.isElementFullscreenEnabled = true
@@ -77,11 +78,6 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.navigationDelegate = nil
         coordinator.webView = nil
         webView.loadHTMLString("", baseURL: nil)
-        // Flush WKWebView internal caches to reclaim memory
-        WKWebsiteDataStore.default().removeData(
-            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
-            modifiedSince: .distantPast
-        ) {}
     }
 
     // MARK: - HTML with iframe embed
@@ -161,11 +157,9 @@ struct YouTubePlayerView: UIViewRepresentable {
         // MARK: Commands — postMessage to YouTube iframe
 
         private func postCommand(_ function: String, args: String = "\"\"") {
-            guard let webView else { return }
+            guard let webView, hasFinishedLoad else { return }
             let js = "document.getElementById('ytplayer').contentWindow.postMessage('{\"event\":\"command\",\"func\":\"\(function)\",\"args\":\(args)}', '*');"
-            webView.evaluateJavaScript(js) { _, error in
-                if let error { print("YT command error: \(error.localizedDescription)") }
-            }
+            webView.evaluateJavaScript(js, completionHandler: nil)
         }
 
         func play() { postCommand("playVideo") }
