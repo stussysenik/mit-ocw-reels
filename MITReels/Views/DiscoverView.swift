@@ -6,64 +6,97 @@ import SwiftData
 /// Uses iOS 17+ `ScrollView` with `.scrollTargetBehavior(.paging)` for native
 /// snap-to-page. One scroll = one page. Haptic feedback on each page change.
 /// White background matches the NASA-inspired light aesthetic.
+///
+/// Tapping the metadata line navigates to the full course lecture sequence.
+/// OCW links below each reel open the course page, syllabus, and readings.
 struct DiscoverView: View {
     @Query private var lectures: [Lecture]
 
     @State private var shuffledLectures: [Lecture] = []
     @State private var visibleId: String?
+    @State private var navigateToCourse: Course?
+    @State private var navigateToLectureId: String?
 
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
     var body: some View {
-        Group {
-            if shuffledLectures.isEmpty {
-                VStack(spacing: Spacing.md) {
-                    ProgressView()
-                        .tint(CarbonColor.interactive)
-                    Text("Loading lectures...")
-                        .font(.subheadline)
-                        .foregroundStyle(CarbonColor.textSecondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(CarbonColor.reelBackground)
-            } else {
-                ScrollView(.vertical) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(shuffledLectures, id: \.youtubeId) { lecture in
-                            ReelView(
-                                lecture: lecture,
-                                isVisible: visibleId == lecture.youtubeId,
-                                autoplayEnabled: autoplayEnabled
-                            )
-                            .containerRelativeFrame(.vertical)
-                            .id(lecture.youtubeId)
-                        }
+        NavigationStack {
+            Group {
+                if shuffledLectures.isEmpty {
+                    VStack(spacing: Spacing.md) {
+                        ProgressView()
+                            .tint(CarbonColor.interactive)
+                        Text("Loading lectures...")
+                            .font(.subheadline)
+                            .foregroundStyle(CarbonColor.textSecondary)
                     }
-                    .scrollTargetLayout()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(CarbonColor.reelBackground)
+                } else {
+                    ScrollView(.vertical) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(shuffledLectures, id: \.youtubeId) { lecture in
+                                ReelView(
+                                    lecture: lecture,
+                                    isVisible: visibleId == lecture.youtubeId,
+                                    autoplayEnabled: autoplayEnabled,
+                                    onViewCourse: { tappedLecture in
+                                        navigateToLectureId = tappedLecture.youtubeId
+                                        navigateToCourse = tappedLecture.course
+                                    }
+                                )
+                                .containerRelativeFrame(.vertical)
+                                .id(lecture.youtubeId)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollPosition(id: $visibleId)
+                    .scrollTargetBehavior(.paging)
+                    .scrollIndicators(.hidden)
+                    .ignoresSafeArea(.container, edges: .vertical)
+                    .background(CarbonColor.reelBackground)
                 }
-                .scrollPosition(id: $visibleId)
-                .scrollTargetBehavior(.paging)
-                .scrollIndicators(.hidden)
-                .ignoresSafeArea(.container, edges: .vertical)
-                .background(CarbonColor.reelBackground)
+            }
+            .navigationBarHidden(true)
+            .navigationDestination(isPresented: Binding(
+                get: { navigateToCourse != nil },
+                set: { if !$0 { navigateToCourse = nil; navigateToLectureId = nil } }
+            )) {
+                if let course = navigateToCourse {
+                    CourseReelsView(course: course, initialLectureId: navigateToLectureId)
+                }
             }
         }
         .onAppear {
             haptic.prepare()
             if shuffledLectures.isEmpty && !lectures.isEmpty {
-                shuffledLectures = lectures.shuffled()
+                shuffledLectures = Self.filterValidLectures(lectures).shuffled()
             }
         }
         .onChange(of: lectures.count) { _, newCount in
             if newCount > 0 && shuffledLectures.isEmpty {
-                shuffledLectures = lectures.shuffled()
+                shuffledLectures = Self.filterValidLectures(lectures).shuffled()
             }
         }
         .onChange(of: visibleId) { _, _ in
             haptic.impactOccurred()
             haptic.prepare()
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Filters out invalid lectures: PDFs, empty IDs, orphan records.
+    /// Note: Does NOT filter by thumbnail quality — thumbnails are cosmetic.
+    /// The video player has its own error state for truly unavailable videos.
+    static func filterValidLectures(_ lectures: [Lecture]) -> [Lecture] {
+        lectures.filter { lecture in
+            !lecture.title.lowercased().hasSuffix(".pdf")
+            && !lecture.youtubeId.isEmpty
+            && !lecture.courseNumber.isEmpty
         }
     }
 }
