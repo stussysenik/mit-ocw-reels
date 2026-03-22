@@ -10,17 +10,15 @@ struct CourseReelsView: View {
     /// Optional starting lecture — when set, scrolls to this lecture on appear (from Discover feed).
     var initialLectureId: String? = nil
     @State private var visibleId: String?
+    @State private var cachedLectures: [Lecture] = []
+    @State private var hasScrolled = false
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
-    private var lectures: [Lecture] {
-        course.lectures ?? []
-    }
-
     var body: some View {
         Group {
-            if lectures.isEmpty {
+            if cachedLectures.isEmpty {
                 ContentUnavailableView(
                     "No Lectures",
                     systemImage: "video.slash",
@@ -30,7 +28,7 @@ struct CourseReelsView: View {
                 ScrollView(.vertical) {
                     LazyVStack(spacing: 0) {
                         ForEach(
-                            Array(lectures.enumerated()),
+                            Array(cachedLectures.enumerated()),
                             id: \.element.youtubeId
                         ) { index, lecture in
                             ReelView(
@@ -56,11 +54,13 @@ struct CourseReelsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             haptic.prepare()
+            cachedLectures = course.lectures ?? []
             if let initialId = initialLectureId, visibleId == nil {
                 visibleId = initialId
             }
         }
-        .onChange(of: visibleId) { _, _ in
+        .onChange(of: visibleId) { old, _ in
+            guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
         }

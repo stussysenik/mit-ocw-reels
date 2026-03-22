@@ -123,19 +123,17 @@ struct OCWScraperTests {
 
     // MARK: - Course Page URL Extraction
 
-    @Test func coursePageURL_extractsFromResourceURL() {
+    @Test func courseBaseString_extractsFromResourceURL() {
         let ocwUrl = "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/resources/abc123/"
-        let result = ReelView.coursePageURL(from: ocwUrl)
-        #expect(result?.absoluteString == "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/")
+        let result = ReelView.courseBaseString(from: ocwUrl)
+        #expect(result == "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/")
     }
 
-    @Test func coursePageURL_returnsNilForEmpty() {
-        let result = ReelView.coursePageURL(from: "")
-        #expect(result == nil)
+    @Test func courseBaseString_returnsNilForEmpty() {
+        #expect(ReelView.courseBaseString(from: "") == nil)
     }
 
-    @Test func coursePageURL_returnsNilForNoResources() {
-        let result = ReelView.coursePageURL(from: "https://ocw.mit.edu/courses/6-006/")
-        #expect(result == nil)
+    @Test func courseBaseString_returnsNilForNoResources() {
+        #expect(ReelView.courseBaseString(from: "https://ocw.mit.edu/courses/6-006/") == nil)
     }
 }

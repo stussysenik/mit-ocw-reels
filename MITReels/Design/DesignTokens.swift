@@ -85,8 +85,8 @@ enum CarbonColor {
 
     // --- Light Reel Surfaces ---
 
-    /// White — reel card background in light mode
-    static let reelBackground = Color.white
+    /// White — reel card background in light mode (alias for layer01)
+    static let reelBackground = layer01
 
     // --- School Gradient Endpoints ---
 
@@ -109,8 +109,6 @@ enum CarbonColor {
 enum Typography {
     /// Hero course number on reel cards
     static let heroNumber: Font = .system(.largeTitle, design: .default).bold()
-    /// School label above video
-    static let schoolLabel: Font = .caption2.weight(.semibold)
     /// Course title on reel
     static let reelTitle: Font = .headline
     /// Metadata line

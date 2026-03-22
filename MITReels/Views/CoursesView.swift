@@ -13,11 +13,11 @@ struct CoursesView: View {
     @Query(sort: \Course.department) private var courses: [Course]
     @State private var searchText = ""
     @State private var showSettings = false
+    @State private var cachedSchoolData: [(school: MITSchool, courses: [Course], lectureCount: Int, departments: [String])] = []
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("courseViewMode") private var courseViewMode = "list"
 
-    /// School data: each school with its courses, lecture count, and departments.
-    private var schoolData: [(school: MITSchool, courses: [Course], lectureCount: Int, departments: [String])] {
+    private func recomputeSchoolData() {
         let filtered = searchText.isEmpty
             ? courses
             : courses.filter {
@@ -28,7 +28,7 @@ struct CoursesView: View {
                     .localizedCaseInsensitiveContains(searchText)
             }
 
-        return MITSchool.allCases.compactMap { school in
+        cachedSchoolData = MITSchool.allCases.compactMap { school in
             let schoolCourses = filtered.filter {
                 MITSchool.from(courseNumber: $0.courseNumber) == school
             }
@@ -42,7 +42,7 @@ struct CoursesView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if schoolData.isEmpty {
+                if cachedSchoolData.isEmpty {
                     ContentUnavailableView(
                         "No Courses",
                         systemImage: "book.closed",
@@ -52,7 +52,7 @@ struct CoursesView: View {
                     .frame(maxWidth: .infinity, minHeight: 300)
                 } else {
                     VStack(spacing: Spacing.md) {
-                        ForEach(schoolData, id: \.school) { data in
+                        ForEach(cachedSchoolData, id: \.school) { data in
                             NavigationLink(destination: SchoolDetailView(
                                 school: data.school,
                                 courses: data.courses
@@ -88,6 +88,9 @@ struct CoursesView: View {
             .sheet(isPresented: $showSettings) {
                 settingsSheet
             }
+            .onAppear { recomputeSchoolData() }
+            .onChange(of: searchText) { _, _ in recomputeSchoolData() }
+            .onChange(of: courses.count) { _, _ in recomputeSchoolData() }
         }
     }
 

@@ -70,7 +70,16 @@ struct YouTubePlayerView: UIViewRepresentable {
 
     // MARK: - HTML with iframe embed
 
+    /// Sanitized video ID — only allows [A-Za-z0-9_-]{11}
+    private static func sanitizedVideoId(_ videoId: String) -> String? {
+        let pattern = /^[A-Za-z0-9_\-]{11}$/
+        return videoId.wholeMatch(of: pattern) != nil ? videoId : nil
+    }
+
     private static func embedHTML(videoId: String, autoplay: Bool) -> String {
+        guard let safeId = sanitizedVideoId(videoId) else {
+            return "<html><body style='background:#000'></body></html>"
+        }
         let autoplayParam = autoplay ? "1" : "0"
         return """
         <!DOCTYPE html>
@@ -86,7 +95,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         <body>
         <iframe
             id="ytplayer"
-            src="https://www.youtube.com/embed/\(videoId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1&origin=https://mitreels.app"
+            src="https://www.youtube.com/embed/\(safeId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1&origin=https://mitreels.app"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowfullscreen>
         </iframe>
@@ -118,26 +127,18 @@ struct YouTubePlayerView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            DispatchQueue.main.async {
-                self.parent.isLoading = false
-                self.parent.hasError = true
-            }
+            handleLoadError()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            handleLoadError()
+        }
+
+        private func handleLoadError() {
             DispatchQueue.main.async {
                 self.parent.isLoading = false
                 self.parent.hasError = true
             }
-        }
-
-        // Allow YouTube/Google navigation within the iframe
-        func webView(
-            _ webView: WKWebView,
-            decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-        ) {
-            decisionHandler(.allow)
         }
 
         // MARK: Commands — postMessage to YouTube iframe

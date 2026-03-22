@@ -26,19 +26,32 @@ struct ReelView: View {
     @State private var isPlaying = false
     @State private var seekTarget: Double? = nil
 
-    private var school: MITSchool {
-        MITSchool.from(courseNumber: lecture.courseNumber)
-    }
+    /// Pre-computed school — immutable for this view's lifetime.
+    private let school: MITSchool
+    /// Pre-computed display label — immutable for this view's lifetime.
+    private let displayLabel: String
 
-    private var displayLabel: String {
+    init(
+        lecture: Lecture,
+        lectureIndex: Int? = nil,
+        isVisible: Bool = false,
+        autoplayEnabled: Bool = true,
+        onViewCourse: ((Lecture) -> Void)? = nil
+    ) {
+        self.lecture = lecture
+        self.lectureIndex = lectureIndex
+        self.isVisible = isVisible
+        self.autoplayEnabled = autoplayEnabled
+        self.onViewCourse = onViewCourse
+
+        self.school = MITSchool.from(courseNumber: lecture.courseNumber)
         if let index = lectureIndex {
-            return "LECTURE \(index + 1)"
+            self.displayLabel = "LECTURE \(index + 1)"
+        } else {
+            let num = lecture.courseNumber
+            self.displayLabel = (num.isEmpty || (!num.contains(".") && num.count > 8))
+                ? lecture.courseName : num
         }
-        let num = lecture.courseNumber
-        if num.isEmpty || (!num.contains(".") && num.count > 8) {
-            return lecture.courseName
-        }
-        return num
     }
 
     var body: some View {
@@ -118,25 +131,9 @@ struct ReelView: View {
             // OCW links — course page, syllabus, readings
             if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
                 HStack(spacing: Spacing.md) {
-                    if let url = URL(string: courseBase) {
-                        Link(destination: url) {
-                            Label("OCW", systemImage: "globe")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(CarbonColor.textLabel)
-                        }
-                    }
-
-                    if let url = URL(string: courseBase + "pages/syllabus/") {
-                        Link(destination: url) {
-                            Label("Syllabus", systemImage: "list.bullet.rectangle")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(CarbonColor.textLabel)
-                        }
-                    }
-
-                    if let url = URL(string: courseBase + "pages/readings/") {
-                        Link(destination: url) {
-                            Label("Readings", systemImage: "book")
+                    ForEach(Self.ocwLinks(base: courseBase), id: \.label) { link in
+                        Link(destination: link.url) {
+                            Label(link.label, systemImage: link.icon)
                                 .font(.caption2.weight(.medium))
                                 .foregroundStyle(CarbonColor.textLabel)
                         }
@@ -158,7 +155,6 @@ struct ReelView: View {
     // MARK: - URL Helpers
 
     /// Extracts the OCW course base URL string from a resource-level ocwUrl.
-    /// Returns a string (not URL) so callers can append sub-paths without double-slash issues.
     /// e.g. "https://ocw.mit.edu/courses/6-006-.../resources/abc123/" → "https://ocw.mit.edu/courses/6-006-.../"
     static func courseBaseString(from ocwUrl: String) -> String? {
         guard !ocwUrl.isEmpty,
@@ -168,10 +164,16 @@ struct ReelView: View {
         return String(ocwUrl[ocwUrl.startIndex..<resourceRange.lowerBound]) + "/"
     }
 
-    /// Convenience: returns the course page as a URL.
-    static func coursePageURL(from ocwUrl: String) -> URL? {
-        guard let base = courseBaseString(from: ocwUrl) else { return nil }
-        return URL(string: base)
+    private static let ocwLinkDefs: [(label: String, icon: String, suffix: String)] = [
+        ("OCW", "globe", ""),
+        ("Syllabus", "list.bullet.rectangle", "pages/syllabus/"),
+        ("Readings", "book", "pages/readings/"),
+    ]
+
+    static func ocwLinks(base: String) -> [(label: String, icon: String, url: URL)] {
+        ocwLinkDefs.compactMap { def in
+            URL(string: base + def.suffix).map { (def.label, def.icon, $0) }
+        }
     }
 
     // MARK: - Video Player

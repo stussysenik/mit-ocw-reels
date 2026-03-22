@@ -37,43 +37,61 @@ struct MITReelsApp: App {
     private static func startBackgroundValidation(container: ModelContainer) {
         guard !UserDefaults.standard.bool(forKey: "seedDataValidated") else { return }
 
-        Task.detached {
+        Task.detached(priority: .utility) {
             let scraper = OCWScraper()
 
-            let lecturesToValidate: [Lecture] = await MainActor.run {
+            // Extract plain data on MainActor — never read @Model off-actor
+            let videoEntries: [(id: String, needsInstructor: Bool)] = await MainActor.run {
                 let descriptor = FetchDescriptor<Lecture>()
-                return (try? container.mainContext.fetch(descriptor)) ?? []
+                let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                return all.map { ($0.youtubeId, $0.instructor.isEmpty) }
             }
 
+            // Validate concurrently (bounded to 8) instead of sequentially
             var invalidIds: [String] = []
-            for lecture in lecturesToValidate {
-                let result = await scraper.validateVideo(lecture.youtubeId)
-                if result == nil {
-                    invalidIds.append(lecture.youtubeId)
-                }
-                // Also update instructor from oEmbed if available
-                if let oEmbed = result, lecture.instructor.isEmpty {
-                    await MainActor.run {
-                        lecture.instructor = oEmbed.authorName
+            var instructorUpdates: [(id: String, name: String)] = []
+
+            await withTaskGroup(of: (String, Bool, OEmbedResult?).self) { group in
+                var inFlight = 0
+                for entry in videoEntries {
+                    if inFlight >= 8 {
+                        if let (id, needed, result) = await group.next() {
+                            if result == nil { invalidIds.append(id) }
+                            else if needed, let r = result { instructorUpdates.append((id, r.authorName)) }
+                        }
+                        inFlight -= 1
                     }
+                    group.addTask {
+                        let result = await scraper.validateVideo(entry.id)
+                        return (entry.id, entry.needsInstructor, result)
+                    }
+                    inFlight += 1
+                }
+                for await (id, needed, result) in group {
+                    if result == nil { invalidIds.append(id) }
+                    else if needed, let r = result { instructorUpdates.append((id, r.authorName)) }
                 }
             }
 
-            if !invalidIds.isEmpty {
-                await MainActor.run {
-                    let descriptor = FetchDescriptor<Lecture>()
-                    let all = (try? container.mainContext.fetch(descriptor)) ?? []
-                    let invalidSet = Set(invalidIds.map { $0.lowercased() })
-                    for lecture in all where invalidSet.contains(lecture.youtubeId.lowercased()) {
-                        container.mainContext.delete(lecture)
-                    }
-                    try? container.mainContext.save()
-                    print("Validation: removed \(invalidIds.count) unavailable videos")
-                }
-            }
+            // Apply all mutations on MainActor in one batch
+            await MainActor.run {
+                let descriptor = FetchDescriptor<Lecture>()
+                let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                let lookup = Dictionary(uniqueKeysWithValues: all.map { ($0.youtubeId.lowercased(), $0) })
 
-            UserDefaults.standard.set(true, forKey: "seedDataValidated")
-            print("Validation: checked \(lecturesToValidate.count) videos, \(invalidIds.count) removed")
+                let invalidSet = Set(invalidIds.map { $0.lowercased() })
+                for id in invalidSet {
+                    if let lecture = lookup[id] { container.mainContext.delete(lecture) }
+                }
+
+                for (id, name) in instructorUpdates {
+                    if let lecture = lookup[id.lowercased()] { lecture.instructor = name }
+                }
+
+                try? container.mainContext.save()
+                UserDefaults.standard.set(true, forKey: "seedDataValidated")
+                print("Validation: checked \(videoEntries.count) videos, \(invalidIds.count) removed")
+            }
         }
     }
 
@@ -92,15 +110,14 @@ struct MITReelsApp: App {
             return
         }
 
-        Task.detached {
+        Task.detached(priority: .utility) {
             do {
                 let scraper = OCWScraper()
                 let scraped = try await scraper.scrapeAll()
                 print("OCWScraper: discovered \(scraped.count) validated lectures")
 
-                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastScrapeTimestamp")
-
                 await MainActor.run {
+                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastScrapeTimestamp")
                     mergeScrapedData(scraped, into: container.mainContext)
                 }
             } catch {
@@ -144,7 +161,7 @@ struct MITReelsApp: App {
 
             if let course = courseMap[item.courseNumber] {
                 lecture.course = course
-            } else if !item.courseNumber.isEmpty {
+            } else {
                 let course = Course(
                     courseNumber: item.courseNumber,
                     title: item.courseName,

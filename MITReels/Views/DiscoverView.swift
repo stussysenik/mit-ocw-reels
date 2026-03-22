@@ -14,6 +14,7 @@ struct DiscoverView: View {
 
     @State private var shuffledLectures: [Lecture] = []
     @State private var visibleId: String?
+    @State private var hasScrolled = false
     @State private var navigateToCourse: Course?
     @State private var navigateToLectureId: String?
 
@@ -81,7 +82,8 @@ struct DiscoverView: View {
                 shuffledLectures = Self.filterValidLectures(lectures).shuffled()
             }
         }
-        .onChange(of: visibleId) { _, _ in
+        .onChange(of: visibleId) { old, _ in
+            guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
         }

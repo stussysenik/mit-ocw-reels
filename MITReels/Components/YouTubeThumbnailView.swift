@@ -23,16 +23,9 @@ struct YouTubeThumbnailView: View {
         Group {
             if let url = thumbnailURL {
                 AsyncImage(url: url, transaction: Transaction(animation: .easeInOut(duration: 0.2))) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        placeholder
-                    case .empty:
-                        placeholder
-                    @unknown default:
+                    if case .success(let image) = phase {
+                        image.resizable().scaledToFill()
+                    } else {
                         placeholder
                     }
                 }
