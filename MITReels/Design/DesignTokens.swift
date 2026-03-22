@@ -55,33 +55,10 @@ enum CarbonColor {
     /// Gray 30 — chevrons, decorative separators
     static let textTertiary = Color(hex: 0xC6C6C6)
 
-    // --- Borders ---
-
-    /// Gray 20 — hairline dividers between content sections
-    static let borderSubtle = Color(hex: 0xE0E0E0)
-    /// Gray 10 — row separators in lists
-    static let borderSection = Color(hex: 0xF4F4F4)
-    /// Gray 50 — emphasis borders
-    static let borderStrong = Color(hex: 0x8D8D8D)
-
     // --- Interactive (10%) ---
 
     /// MIT Cardinal — active tabs, lecture labels (7.5:1 on white, AAA)
     static let interactive = Color(hex: 0xA31F34)
-
-    // --- Dark Card Surfaces (reel feed) ---
-
-    /// Gray 100 — immersive reel card background
-    static let cardSurface = Color(hex: 0x161616)
-
-    // --- Text on Dark (reel feed) ---
-
-    /// White — titles on dark card (18.6:1 on #161616, AAA)
-    static let textOnDarkPrimary = Color.white
-    /// Gray 30 — subtitles on dark card (9.7:1 on #161616, AAA)
-    static let textOnDarkSecondary = Color(hex: 0xC6C6C6)
-    /// Gray 50 — labels on dark card (5.5:1 on #161616, AA)
-    static let textOnDarkLabel = Color(hex: 0x8D8D8D)
 
     // --- Light Reel Surfaces ---
 
@@ -95,13 +72,6 @@ enum CarbonColor {
     static let archPlanningGradientEnd = Color(hex: 0xE8C96A)
     static let humanitiesGradientEnd = Color(hex: 0xD07BA8)
     static let crossDiscGradientEnd = Color(hex: 0xA0A0A0)
-
-    // --- Support ---
-
-    /// Carbon Red 60 — error states
-    static let supportError = Color(hex: 0xDA1E28)
-    /// Carbon Green 60 — success states
-    static let supportSuccess = Color(hex: 0x198038)
 }
 
 // MARK: - Typography Scale (NASA-inspired)

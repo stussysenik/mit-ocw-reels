@@ -56,7 +56,7 @@ struct CourseReelsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             haptic.prepare()
-            cachedLectures = course.lectures ?? []
+            cachedLectures = (course.lectures ?? []).uniqued(by: { $0.youtubeId.lowercased() })
             if let initialId = initialLectureId, visibleId == nil {
                 visibleId = initialId
             }

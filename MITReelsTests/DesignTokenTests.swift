@@ -46,6 +46,6 @@ struct DesignTokenTests {
         let _ = CarbonColor.textSecondary
         let _ = CarbonColor.background
         let _ = CarbonColor.layer01
-        let _ = CarbonColor.borderSubtle
+        let _ = CarbonColor.reelBackground
     }
 }

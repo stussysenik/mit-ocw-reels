@@ -98,16 +98,7 @@ actor OCWScraper {
             }
         }
 
-        // Dedup by YouTube ID
-        var seen = Set<String>()
-        let deduped = allLectures.filter { lecture in
-            let key = lecture.youtubeId.lowercased()
-            guard !seen.contains(key) else { return false }
-            seen.insert(key)
-            return true
-        }
-
-        return deduped
+        return allLectures.uniqued(by: { $0.youtubeId.lowercased() })
     }
 
     /// Validate a single YouTube video ID via oEmbed. Returns nil if unavailable.
@@ -376,14 +367,3 @@ actor OCWScraper {
     }
 }
 
-// MARK: - Convenience Extension
-
-extension OCWScraper {
-    /// Export lectures as JSON Data matching seed_data.json format.
-    func exportJSON(_ lectures: [ScrapedLecture]) throws -> Data {
-        let wrapper = ["lectures": lectures]
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(wrapper)
-    }
-}

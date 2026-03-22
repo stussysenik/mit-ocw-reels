@@ -81,7 +81,7 @@ struct MITReelsApp: App {
             await MainActor.run {
                 let descriptor = FetchDescriptor<Lecture>()
                 let all = (try? container.mainContext.fetch(descriptor)) ?? []
-                let lookup = Dictionary(uniqueKeysWithValues: all.map { ($0.youtubeId.lowercased(), $0) })
+                let lookup = Dictionary(all.map { ($0.youtubeId.lowercased(), $0) }, uniquingKeysWith: { first, _ in first })
 
                 let invalidSet = Set(invalidIds.map { $0.lowercased() })
                 for id in invalidSet {

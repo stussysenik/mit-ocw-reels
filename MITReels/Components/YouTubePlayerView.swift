@@ -47,6 +47,8 @@ struct YouTubePlayerView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.parent = self  // Keep bindings fresh
+
         if context.coordinator.currentVideoId != videoId {
             context.coordinator.currentVideoId = videoId
             context.coordinator.hasFinishedLoad = false

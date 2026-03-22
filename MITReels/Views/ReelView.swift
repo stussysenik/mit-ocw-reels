@@ -133,9 +133,9 @@ struct ReelView: View {
                 onViewCourse?(lecture)
             }
 
-            // OCW + YouTube links
-            HStack(spacing: Spacing.md) {
-                if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
+            // OCW links (YouTube is accessible via the overlay button on the video)
+            if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
+                HStack(spacing: Spacing.md) {
                     ForEach(Self.ocwLinks(base: courseBase), id: \.label) { link in
                         Link(destination: link.url) {
                             Label(link.label, systemImage: link.icon)
@@ -144,18 +144,10 @@ struct ReelView: View {
                         }
                     }
                 }
-
-                if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
-                    Link(destination: ytURL) {
-                        Label("YouTube", systemImage: "play.rectangle.fill")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(CarbonColor.textLabel)
-                    }
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.xs)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Spacing.md)
-            .padding(.top, Spacing.xs)
 
             Spacer(minLength: 0)
         }
@@ -251,12 +243,13 @@ struct ReelView: View {
                 // YouTube deep-link — top-right corner of video
                 if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
                     Link(destination: ytURL) {
-                        Image(systemName: "play.rectangle.fill")
-                            .font(.title3)
+                        Text("YouTube")
+                            .font(.caption2.weight(.bold))
                             .foregroundStyle(.white)
-                            .padding(10)
-                            .background(.black.opacity(0.5))
-                            .clipShape(Circle())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(.black.opacity(0.6))
+                            .clipShape(Capsule())
                     }
                     .padding(Spacing.sm)
                 }
