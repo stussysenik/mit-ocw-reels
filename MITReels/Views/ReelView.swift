@@ -149,6 +149,12 @@ struct ReelView: View {
         .background(CarbonColor.reelBackground.ignoresSafeArea())
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
+            if !visible {
+                isVideoLoading = true
+                hasVideoError = false
+                currentTime = 0
+                duration = 0
+            }
         }
     }
 
@@ -183,26 +189,31 @@ struct ReelView: View {
             ZStack {
                 YouTubeThumbnailView(videoId: lecture.youtubeId)
                     .overlay {
-                        if isVideoLoading && !hasVideoError {
+                        if isVisible && isVideoLoading && !hasVideoError {
                             ShimmerView()
                                 .opacity(0.55)
                         }
                     }
 
-                YouTubePlayerView(
-                    videoId: lecture.youtubeId,
-                    autoplay: isVisible && autoplayEnabled,
-                    isLoading: $isVideoLoading,
-                    hasError: $hasVideoError,
-                    currentTime: $currentTime,
-                    duration: $duration,
-                    isPlaying: $isPlaying,
-                    seekTo: $seekTarget
-                )
-                .opacity(isVideoLoading && !hasVideoError ? 0 : 1)
-                .animation(.easeIn(duration: 0.3), value: isVideoLoading)
+                // Only create WKWebView when this reel is visible.
+                // This ensures at most 1 WKWebView exists at a time,
+                // preventing memory accumulation and crashes during scroll.
+                if isVisible {
+                    YouTubePlayerView(
+                        videoId: lecture.youtubeId,
+                        autoplay: autoplayEnabled,
+                        isLoading: $isVideoLoading,
+                        hasError: $hasVideoError,
+                        currentTime: $currentTime,
+                        duration: $duration,
+                        isPlaying: $isPlaying,
+                        seekTo: $seekTarget
+                    )
+                    .opacity(isVideoLoading && !hasVideoError ? 0 : 1)
+                    .animation(.easeIn(duration: 0.3), value: isVideoLoading)
+                }
 
-                if isVideoLoading && !hasVideoError {
+                if isVisible && isVideoLoading && !hasVideoError {
                     ProgressView()
                         .controlSize(.large)
                         .tint(.white)
@@ -224,7 +235,7 @@ struct ReelView: View {
                 }
             }
 
-            if !isVideoLoading && !hasVideoError && duration > 0 {
+            if isVisible && !isVideoLoading && !hasVideoError && duration > 0 {
                 TimelineScrubber(currentTime: $currentTime, duration: duration) { time in
                     seekTarget = time
                 }

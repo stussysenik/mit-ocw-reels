@@ -68,6 +68,16 @@ struct YouTubePlayerView: UIViewRepresentable {
         }
     }
 
+    /// Clean up WKWebView when SwiftUI removes this view from the hierarchy.
+    /// Prevents navigation delegate callbacks on deallocated Coordinator,
+    /// stops background media buffering, and releases iframe resources.
+    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.stopLoading()
+        webView.navigationDelegate = nil
+        coordinator.webView = nil
+        webView.loadHTMLString("", baseURL: nil)
+    }
+
     // MARK: - HTML with iframe embed
 
     /// Sanitized video ID — only allows [A-Za-z0-9_-]{11}
@@ -121,8 +131,8 @@ struct YouTubePlayerView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             guard !hasFinishedLoad else { return }
             hasFinishedLoad = true
-            DispatchQueue.main.async {
-                self.parent.isLoading = false
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.isLoading = false
             }
         }
 
@@ -135,18 +145,20 @@ struct YouTubePlayerView: UIViewRepresentable {
         }
 
         private func handleLoadError() {
-            DispatchQueue.main.async {
-                self.parent.isLoading = false
-                self.parent.hasError = true
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.isLoading = false
+                self?.parent.hasError = true
             }
         }
 
         // MARK: Commands — postMessage to YouTube iframe
 
         private func postCommand(_ function: String, args: String = "\"\"") {
-            webView?.evaluateJavaScript(
-                "document.getElementById('ytplayer').contentWindow.postMessage('{\"event\":\"command\",\"func\":\"\(function)\",\"args\":\(args)}', '*');"
-            )
+            guard let webView else { return }
+            let js = "document.getElementById('ytplayer').contentWindow.postMessage('{\"event\":\"command\",\"func\":\"\(function)\",\"args\":\(args)}', '*');"
+            webView.evaluateJavaScript(js) { _, error in
+                if let error { print("YT command error: \(error.localizedDescription)") }
+            }
         }
 
         func play() { postCommand("playVideo") }
