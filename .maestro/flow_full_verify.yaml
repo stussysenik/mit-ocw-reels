@@ -1,0 +1,49 @@
+appId: com.mitreels.app
+---
+# Full verification: drift + video playback + courses
+
+# Launch fresh
+- launchApp:
+    clearState: true
+
+# Wait for app to load and YouTube embed to start loading
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: verify_reel_1
+
+# Swipe to reel 2
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: verify_reel_2
+
+# Swipe to reel 3
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: verify_reel_3
+
+# Swipe to reel 4
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: verify_reel_4
+
+# Switch to Courses tab
+- tapOn: "Courses"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: verify_courses
+
+# Open settings gear
+- tapOn:
+    id: "settingsButton"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: verify_settings

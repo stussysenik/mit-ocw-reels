@@ -1,0 +1,30 @@
+appId: com.mitreels.app
+---
+# Test: Verify YouTube video loads and is playable
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Wait for first reel to load
+- takeScreenshot: video_loading
+
+# Wait for YouTube player to initialize (shimmer → video)
+- extendedWaitUntil:
+    timeout: 15000
+    visible: true
+
+- takeScreenshot: video_loaded
+
+# Navigate to Courses tab and open a course
+- tapOn: "Courses"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Tap first available course
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd
+- takeScreenshot: courses_with_videos

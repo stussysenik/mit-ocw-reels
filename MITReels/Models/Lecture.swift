@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// A single lecture video from MIT OpenCourseWare.
+/// A single lecture video from a university open courseware source.
 /// SwiftData @Model with CloudKit-compatible defaults on every property.
 /// CloudKit requires: all props have defaults, no @Attribute(.unique), optional relationships with inverses.
 @Model
@@ -15,6 +15,29 @@ final class Lecture {
     var year: Int = 0
     var ocwUrl: String = ""
     var topicName: String = ""
+    var instructor: String = ""
+    /// UniversitySource.rawValue — defaults to "mit" for backward compatibility.
+    var sourceId: String = "mit"
+    /// Whether this lecture's YouTube video has been confirmed playable via oEmbed.
+    var isValidated: Bool = false
+
+    /// Whether this lecture passes basic feed eligibility checks.
+    var isFeedEligible: Bool {
+        let t = title.lowercased()
+        return isValidated
+            && youtubeId.count == 11
+            && !courseNumber.isEmpty
+            && !t.hasSuffix(".pdf")
+            && !t.contains("3play")
+            && !t.contains("caption file")
+            && t != "deleted video"
+            && t != "private video"
+    }
+
+    /// Convenience accessor for the typed source enum.
+    var source: UniversitySource {
+        UniversitySource(rawValue: sourceId) ?? .mit
+    }
 
     /// Inverse relationship — CloudKit requires optional + inverse on both sides
     var course: Course?
@@ -28,7 +51,8 @@ final class Lecture {
         semester: String = "",
         year: Int = 0,
         ocwUrl: String = "",
-        topicName: String = ""
+        topicName: String = "",
+        instructor: String = ""
     ) {
         self.title = title
         self.youtubeId = youtubeId
@@ -39,5 +63,6 @@ final class Lecture {
         self.year = year
         self.ocwUrl = ocwUrl
         self.topicName = topicName
+        self.instructor = instructor
     }
 }
