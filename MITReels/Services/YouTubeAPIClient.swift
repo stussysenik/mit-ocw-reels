@@ -6,7 +6,6 @@ import Foundation
 struct YouTubePlaylist: Codable, Hashable {
     let id: String
     let title: String
-    let description: String
     let itemCount: Int
 }
 
@@ -14,9 +13,6 @@ struct YouTubePlaylist: Codable, Hashable {
 struct YouTubeVideo: Codable, Hashable {
     let videoId: String
     let title: String
-    let description: String
-    let thumbnailUrl: String
-    let position: Int
     let playlistId: String
     let playlistTitle: String
 }
@@ -152,7 +148,6 @@ actor YouTubeAPIClient {
                 YouTubePlaylist(
                     id: raw.id,
                     title: raw.snippet.title,
-                    description: raw.snippet.description,
                     itemCount: raw.contentDetails?.itemCount ?? 0
                 )
             }
@@ -198,17 +193,9 @@ actor YouTubeAPIClient {
                       let videoId = raw.snippet.resourceId.videoId,
                       !videoId.isEmpty else { return nil }
 
-                let thumbnail = raw.snippet.thumbnails?.high?.url
-                    ?? raw.snippet.thumbnails?.medium?.url
-                    ?? raw.snippet.thumbnails?.default?.url
-                    ?? ""
-
                 return YouTubeVideo(
                     videoId: videoId,
                     title: raw.snippet.title,
-                    description: raw.snippet.description,
-                    thumbnailUrl: thumbnail,
-                    position: raw.snippet.position,
                     playlistId: playlistId,
                     playlistTitle: playlistTitle
                 )

@@ -6,6 +6,7 @@ import Foundation
 /// until the user explicitly enables them in Settings.
 ///
 /// Storage: comma-separated source IDs in UserDefaults key "enabledSourceIds".
+@MainActor
 final class SourcePreferences: ObservableObject {
     static let shared = SourcePreferences()
 

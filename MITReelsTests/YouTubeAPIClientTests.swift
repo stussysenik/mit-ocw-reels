@@ -27,30 +27,16 @@ struct YouTubeAPIClientTests {
     }
 
     @Test func youtubePlaylistModelFields() {
-        let playlist = YouTubePlaylist(
-            id: "PLtest",
-            title: "Test Playlist",
-            description: "A test",
-            itemCount: 10
-        )
+        let playlist = YouTubePlaylist(id: "PLtest", title: "Test Playlist", itemCount: 10)
         #expect(playlist.id == "PLtest")
         #expect(playlist.title == "Test Playlist")
         #expect(playlist.itemCount == 10)
     }
 
     @Test func youtubeVideoModelFields() {
-        let video = YouTubeVideo(
-            videoId: "abc123def45",
-            title: "Lecture 1",
-            description: "First lecture",
-            thumbnailUrl: "https://i.ytimg.com/vi/abc/hqdefault.jpg",
-            position: 0,
-            playlistId: "PLtest",
-            playlistTitle: "CS229"
-        )
+        let video = YouTubeVideo(videoId: "abc123def45", title: "Lecture 1", playlistId: "PLtest", playlistTitle: "CS229")
         #expect(video.videoId == "abc123def45")
         #expect(video.title == "Lecture 1")
-        #expect(video.position == 0)
         #expect(video.playlistTitle == "CS229")
     }
 }

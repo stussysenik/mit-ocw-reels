@@ -3,6 +3,7 @@ import Testing
 @testable import MITReels
 
 /// Verify SourcePreferences toggle persistence and MIT-always-on invariant.
+@MainActor
 struct SourcePreferencesTests {
 
     @Test func defaultEnabledSourcesContainsMIT() {

@@ -113,8 +113,10 @@ struct MITReelsApp: App {
 
         // Delay to let multi-source seed finish first
         Task.detached(priority: .background) {
-            // Wait for seed to complete
-            try? await Task.sleep(for: .seconds(10))
+            // Wait for multi-source seed to complete
+            while !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v6") {
+                try? await Task.sleep(for: .seconds(2))
+            }
 
             let scraper = OCWScraper()
 
