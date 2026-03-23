@@ -156,7 +156,7 @@ struct DiscoverView: View {
             let titleLower = lecture.title.lowercased()
             guard !blocked.contains(lecture.youtubeId),
                   enabledSources.contains(lecture.sourceId),
-                  !lecture.youtubeId.isEmpty,
+                  lecture.youtubeId.count == 11,
                   !lecture.courseNumber.isEmpty,
                   !titleLower.hasSuffix(".pdf"),
                   !titleLower.contains("3play"),

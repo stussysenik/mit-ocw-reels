@@ -31,6 +31,7 @@ struct ReelView: View {
     @State private var showLiked = false
     @State private var showDisliked = false
     @State private var toastText: String?
+    @State private var showFullLabels = false
     @State private var currentTime: Double = 0
     @State private var duration: Double = 0
     @State private var isPlaying = false
@@ -104,7 +105,7 @@ struct ReelView: View {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(16 / 9, contentMode: .fit)
 
-            // Metadata line — tappable to navigate to course when onViewCourse is set
+            // Metadata line — tap text to expand, chevron-only for course nav
             HStack(spacing: 6) {
                 Text(sourceName)
                     .font(Typography.reelMeta)
@@ -116,7 +117,7 @@ struct ReelView: View {
                 Text(lecture.courseName)
                     .font(Typography.reelMeta)
                     .foregroundStyle(CarbonColor.textLabel)
-                    .lineLimit(1)
+                    .lineLimit(showFullLabels ? nil : 1)
 
                 if !lecture.semester.isEmpty && lecture.year > 0 {
                     Text("\u{00B7}")
@@ -134,15 +135,14 @@ struct ReelView: View {
                     Text(lecture.instructor)
                         .font(Typography.reelMeta)
                         .foregroundStyle(CarbonColor.textPlaceholder)
-                        .lineLimit(1)
+                        .lineLimit(showFullLabels ? nil : 1)
                 }
 
                 Spacer()
 
                 HStack(spacing: Spacing.sm) {
                     Button {
-                        let g = UIImpactFeedbackGenerator(style: .light)
-                        g.impactOccurred()
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
                         withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
                         showToast("More like this")
@@ -157,11 +157,13 @@ struct ReelView: View {
                             .contentShape(Rectangle())
                     }
                     Button {
-                        let g = UIImpactFeedbackGenerator(style: .medium)
-                        g.impactOccurred()
+                        // Choreographed: toast → pause → haptic → auto-advance
                         FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
                         withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
-                        showToast("Got it, less of this")
+                        showToast("Less like this")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
                     } label: {
                         Image(systemName: showDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                             .font(.subheadline)
@@ -172,9 +174,13 @@ struct ReelView: View {
                 }
 
                 if onViewCourse != nil {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(CarbonColor.textTertiary)
+                    Button { onViewCourse?(lecture) } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(CarbonColor.textTertiary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,7 +189,7 @@ struct ReelView: View {
             .padding(.bottom, Spacing.xs)
             .contentShape(Rectangle())
             .onTapGesture {
-                onViewCourse?(lecture)
+                withAnimation(.easeInOut(duration: 0.2)) { showFullLabels.toggle() }
             }
 
             // OCW links (YouTube is accessible via the overlay button on the video)
