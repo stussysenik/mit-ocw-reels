@@ -45,6 +45,17 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
     case systemCrafters = "system_crafters"
     case tjDevries = "tj_devries"
 
+    // More CS/ML/Research
+    case statquest = "statquest"
+    case benEater = "ben_eater"
+    case reducible = "reducible"
+    case sebastianLague = "sebastian_lague"
+    case traversyMedia = "traversy_media"
+    case liveOverflow = "live_overflow"
+    case lexFridman = "lex_fridman"
+    case deepMind = "deepmind"
+    case yannicKilcher = "yannic_kilcher"
+
     var id: String { rawValue }
 
     // MARK: - Display
@@ -81,6 +92,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return "Tsoding"
         case .systemCrafters: return "System Crafters"
         case .tjDevries: return "TJ DeVries"
+        case .statquest: return "StatQuest"
+        case .benEater: return "Ben Eater"
+        case .reducible: return "Reducible"
+        case .sebastianLague: return "Sebastian Lague"
+        case .traversyMedia: return "Traversy Media"
+        case .liveOverflow: return "LiveOverflow"
+        case .lexFridman: return "Lex Fridman"
+        case .deepMind: return "Google DeepMind"
+        case .yannicKilcher: return "Yannic Kilcher"
         }
     }
 
@@ -116,6 +136,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return "Tsoding"
         case .systemCrafters: return "Sys Crafters"
         case .tjDevries: return "TJ"
+        case .statquest: return "StatQuest"
+        case .benEater: return "Ben Eater"
+        case .reducible: return "Reducible"
+        case .sebastianLague: return "Seb Lague"
+        case .traversyMedia: return "Traversy"
+        case .liveOverflow: return "LiveOverflow"
+        case .lexFridman: return "Lex"
+        case .deepMind: return "DeepMind"
+        case .yannicKilcher: return "Yannic"
         }
     }
 
@@ -151,6 +180,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return "hammer"
         case .systemCrafters: return "text.and.command.macwindow"
         case .tjDevries: return "rectangle.and.pencil.and.ellipsis"
+        case .statquest: return "chart.bar.xaxis"
+        case .benEater: return "memorychip"
+        case .reducible: return "arrow.triangle.branch"
+        case .sebastianLague: return "gamecontroller"
+        case .traversyMedia: return "globe"
+        case .liveOverflow: return "lock.shield"
+        case .lexFridman: return "mic"
+        case .deepMind: return "brain"
+        case .yannicKilcher: return "doc.text.magnifyingglass"
         }
     }
 
@@ -188,6 +226,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return Color(hex: 0x5B2C6F)
         case .systemCrafters: return Color(hex: 0x7D3C98)
         case .tjDevries: return Color(hex: 0x2C3E50)
+        case .statquest: return Color(hex: 0x27AE60)
+        case .benEater: return Color(hex: 0xE67E22)
+        case .reducible: return Color(hex: 0x3498DB)
+        case .sebastianLague: return Color(hex: 0x1ABC9C)
+        case .traversyMedia: return Color(hex: 0x9B59B6)
+        case .liveOverflow: return Color(hex: 0xE74C3C)
+        case .lexFridman: return Color(hex: 0x2C3E50)
+        case .deepMind: return Color(hex: 0x4285F4)
+        case .yannicKilcher: return Color(hex: 0xF39C12)
         }
     }
 
@@ -223,6 +270,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return Color(hex: 0x8E44AD)
         case .systemCrafters: return Color(hex: 0xAF7AC5)
         case .tjDevries: return Color(hex: 0x5D6D7E)
+        case .statquest: return Color(hex: 0x52D98A)
+        case .benEater: return Color(hex: 0xF0A654)
+        case .reducible: return Color(hex: 0x6BB8E8)
+        case .sebastianLague: return Color(hex: 0x48D1CC)
+        case .traversyMedia: return Color(hex: 0xBB8FCE)
+        case .liveOverflow: return Color(hex: 0xF07070)
+        case .lexFridman: return Color(hex: 0x5D6D7E)
+        case .deepMind: return Color(hex: 0x7BAAF7)
+        case .yannicKilcher: return Color(hex: 0xF7C948)
         }
     }
 
@@ -260,6 +316,15 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .tsoding: return "UCrqM0Ym_NbK1fqeQG2VIohg"
         case .systemCrafters: return "UCAiiOTio8Yu69c3XnR7nQBQ"
         case .tjDevries: return "UCd3dNckv1Za2coSaHGHl5aA"
+        case .statquest: return "UCtYLUTtgS3k1Fg4y5tAhLbw"
+        case .benEater: return "UCS0N5baNlQWJCUrhCEo8WlA"
+        case .reducible: return "UCK8XIGR5kRidIw2fWqwyHRA"
+        case .sebastianLague: return "UCmtyQOKKmrMVaKuRXz02jbQ"
+        case .traversyMedia: return "UC29ju8bIPH5as8OGnQzwJyA"
+        case .liveOverflow: return "UClcE-kVhqyiHCcjYwcpfj9w"
+        case .lexFridman: return "UCSHZKyawb77ixDdsGog4iWA"
+        case .deepMind: return "UCP7jMXSY2xbc3KCAE0MHQ-A"
+        case .yannicKilcher: return "UCZHmQk67mSJgfCCTn7xBfew"
         }
     }
 

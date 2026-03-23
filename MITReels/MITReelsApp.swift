@@ -22,6 +22,7 @@ struct MITReelsApp: App {
             // Multi-source seed runs async — 5000+ records would block main thread
             MITReelsApp.startMultiSourceSeed(container: container)
             MITReelsApp.startBackgroundValidation(container: container)
+            MITReelsApp.startMultiSourceValidation(container: container)
             MITReelsApp.startBackgroundScrape(container: container)
             MITReelsApp.startYouTubeFetch(container: container)
         } catch {
@@ -98,6 +99,73 @@ struct MITReelsApp: App {
                 try? container.mainContext.save()
                 UserDefaults.standard.set(true, forKey: "seedDataValidated")
                 print("Validation: checked \(videoEntries.count) videos, \(invalidIds.count) removed")
+            }
+        }
+    }
+
+    // MARK: - Multi-Source Video Validation
+
+    /// Validates multi-source seed lectures via YouTube oEmbed.
+    /// Removes lectures whose videos are unavailable (deleted, private, region-locked).
+    /// Runs once after multi-source seed completes (tracked via UserDefaults).
+    private static func startMultiSourceValidation(container: ModelContainer) {
+        guard !UserDefaults.standard.bool(forKey: "multiSourceValidated_v1") else { return }
+
+        // Delay to let multi-source seed finish first
+        Task.detached(priority: .background) {
+            // Wait for seed to complete
+            try? await Task.sleep(for: .seconds(10))
+
+            let scraper = OCWScraper()
+
+            let videoIds: [String] = await MainActor.run {
+                let descriptor = FetchDescriptor<Lecture>()
+                let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                return all.filter { $0.sourceId != "mit" }.map { $0.youtubeId }
+            }
+
+            guard !videoIds.isEmpty else {
+                await MainActor.run { UserDefaults.standard.set(true, forKey: "multiSourceValidated_v1") }
+                return
+            }
+
+            print("Multi-source validation: checking \(videoIds.count) videos...")
+            var invalidIds: [String] = []
+
+            // Validate in batches of 4 to avoid hammering the network
+            await withTaskGroup(of: (String, Bool).self) { group in
+                var inFlight = 0
+                for id in videoIds {
+                    if inFlight >= 4 {
+                        if let (checkedId, isValid) = await group.next() {
+                            if !isValid { invalidIds.append(checkedId) }
+                        }
+                        inFlight -= 1
+                    }
+                    group.addTask {
+                        let result = await scraper.validateVideo(id)
+                        return (id, result != nil)
+                    }
+                    inFlight += 1
+                }
+                for await (checkedId, isValid) in group {
+                    if !isValid { invalidIds.append(checkedId) }
+                }
+            }
+
+            // Delete invalid lectures on MainActor
+            await MainActor.run {
+                if !invalidIds.isEmpty {
+                    let invalidSet = Set(invalidIds.map { $0.lowercased() })
+                    let descriptor = FetchDescriptor<Lecture>()
+                    let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                    for lecture in all where invalidSet.contains(lecture.youtubeId.lowercased()) {
+                        container.mainContext.delete(lecture)
+                    }
+                    try? container.mainContext.save()
+                }
+                UserDefaults.standard.set(true, forKey: "multiSourceValidated_v1")
+                print("Multi-source validation: \(invalidIds.count) unavailable videos removed")
             }
         }
     }
@@ -250,7 +318,7 @@ struct MITReelsApp: App {
     /// Seeds non-MIT lecture sources from multi_source_seed.json in a background task.
     /// Batches inserts in chunks of 200 to avoid blocking main thread with 5000+ records.
     private static func startMultiSourceSeed(container: ModelContainer) {
-        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v4") else { return }
+        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v5") else { return }
 
         Task.detached(priority: .utility) {
             guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
@@ -321,7 +389,7 @@ struct MITReelsApp: App {
                 if inserted > 0 {
                     try? container.mainContext.save()
                 }
-                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v4")
+                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v5")
                 print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
             }
         }
