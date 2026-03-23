@@ -46,6 +46,7 @@ struct PreviewSampleData {
         for lecture in lectures {
             container.mainContext.insert(lecture)
             lecture.course = course
+            lecture.isValidated = true
         }
 
         // --- Course 2: Math ---
@@ -70,6 +71,7 @@ struct PreviewSampleData {
         )
         container.mainContext.insert(lecture3)
         lecture3.course = course2
+        lecture3.isValidated = true
 
         // --- Course 3: Stanford CS229 (multi-source) ---
         let stanfordCourse = Course(
@@ -95,6 +97,7 @@ struct PreviewSampleData {
         stanfordLecture.sourceId = "stanford"
         container.mainContext.insert(stanfordLecture)
         stanfordLecture.course = stanfordCourse
+        stanfordLecture.isValidated = true
 
         return container
     }()

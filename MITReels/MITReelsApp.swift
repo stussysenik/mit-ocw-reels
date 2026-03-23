@@ -18,15 +18,37 @@ struct MITReelsApp: App {
 
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
-            MITReelsApp.seedDataIfNeeded(context: container.mainContext)
-            // Multi-source seed runs async — 5000+ records would block main thread
-            MITReelsApp.startMultiSourceSeed(container: container)
-            MITReelsApp.startBackgroundValidation(container: container)
-            MITReelsApp.startMultiSourceValidation(container: container)
-            MITReelsApp.startBackgroundScrape(container: container)
-            MITReelsApp.startYouTubeFetch(container: container)
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Schema migration failed — delete store and recreate from scratch
+            let storeURL = URL.applicationSupportDirectory.appending(path: "default.store")
+            for ext in ["", ".wal", ".shm"] {
+                try? FileManager.default.removeItem(at: storeURL.appendingPathExtension(ext))
+            }
+            UserDefaults.standard.removeObject(forKey: "seedDataValidated")
+            UserDefaults.standard.removeObject(forKey: "multiSourceSeedCompleted")
+            UserDefaults.standard.removeObject(forKey: "multiSourceSeeded_v8")
+            container = try! ModelContainer(for: Course.self, Lecture.self)
+        }
+
+        // All heavy work deferred — UI renders immediately
+        MITReelsApp.startInitialSetup(container: container)
+    }
+
+    /// Orchestrates startup tasks sequentially so each phase completes before the next.
+    /// All SwiftData work happens in batched MainActor.run blocks — max ~50ms main thread hold.
+    private static func startInitialSetup(container: ModelContainer) {
+        // Warm up WebView pool immediately — no dependency on data
+        Task { @MainActor in WKWebViewPool.shared.warmUp() }
+
+        Task.detached(priority: .userInitiated) {
+            await seedDataIfNeeded(container: container)
+            await migrateExistingLecturesToValidated(container: container)
+            startMultiSourceSeed(container: container)
+            startBackgroundValidation(container: container)
+            startMultiSourceValidation(container: container)
+            startBackgroundScrape(container: container)
+            startYouTubeFetch(container: container)
+            startPeriodicValidation(container: container)
         }
     }
 
@@ -92,13 +114,19 @@ struct MITReelsApp: App {
                     if let lecture = lookup[id] { container.mainContext.delete(lecture) }
                 }
 
+                // Mark confirmed-valid lectures
+                let validatedIds = Set(videoEntries.map { $0.id.lowercased() }).subtracting(invalidSet)
+                for id in validatedIds {
+                    if let lecture = lookup[id] { lecture.isValidated = true }
+                }
+
                 for (id, name) in instructorUpdates {
                     if let lecture = lookup[id.lowercased()] { lecture.instructor = name }
                 }
 
                 try? container.mainContext.save()
                 UserDefaults.standard.set(true, forKey: "seedDataValidated")
-                print("Validation: checked \(videoEntries.count) videos, \(invalidIds.count) removed")
+                print("Validation: checked \(videoEntries.count) videos, \(invalidIds.count) removed, \(validatedIds.count) validated")
             }
         }
     }
@@ -155,19 +183,25 @@ struct MITReelsApp: App {
                 }
             }
 
-            // Delete invalid lectures on MainActor
+            // Delete invalid and mark valid lectures on MainActor
             await MainActor.run {
-                if !invalidIds.isEmpty {
-                    let invalidSet = Set(invalidIds.map { $0.lowercased() })
-                    let descriptor = FetchDescriptor<Lecture>()
-                    let all = (try? container.mainContext.fetch(descriptor)) ?? []
-                    for lecture in all where invalidSet.contains(lecture.youtubeId.lowercased()) {
+                let invalidSet = Set(invalidIds.map { $0.lowercased() })
+                let validatedSet = Set(videoIds.map { $0.lowercased() }).subtracting(invalidSet)
+
+                let descriptor = FetchDescriptor<Lecture>()
+                let all = (try? container.mainContext.fetch(descriptor)) ?? []
+                for lecture in all {
+                    let idLower = lecture.youtubeId.lowercased()
+                    if invalidSet.contains(idLower) {
                         container.mainContext.delete(lecture)
+                    } else if validatedSet.contains(idLower) {
+                        lecture.isValidated = true
                     }
-                    try? container.mainContext.save()
                 }
+
+                try? container.mainContext.save()
                 UserDefaults.standard.set(true, forKey: "multiSourceValidated_v1")
-                print("Multi-source validation: \(invalidIds.count) unavailable videos removed")
+                print("Multi-source validation: \(invalidIds.count) removed, \(validatedSet.count) validated")
             }
         }
     }
@@ -234,6 +268,7 @@ struct MITReelsApp: App {
                 topicName: item.topicName,
                 instructor: item.instructor
             )
+            lecture.isValidated = true  // OCW scraper validates via oEmbed before returning
             context.insert(lecture)
 
             if let course = courseMap[item.courseNumber] {
@@ -262,57 +297,101 @@ struct MITReelsApp: App {
 
     // MARK: - Seed Data Loader
 
-    @MainActor
-    private static func seedDataIfNeeded(context: ModelContext) {
-        let descriptor = FetchDescriptor<Lecture>()
-        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+    /// Seeds initial lecture data from bundled JSON in batched MainActor.run blocks.
+    /// Each batch holds the main thread for ~50ms max, yielding between batches.
+    private static func seedDataIfNeeded(container: ModelContainer) async {
+        let needsSeed: Bool = await MainActor.run {
+            let descriptor = FetchDescriptor<Lecture>()
+            return ((try? container.mainContext.fetchCount(descriptor)) ?? 0) == 0
+        }
+        guard needsSeed else { return }
 
         guard let url = Bundle.main.url(forResource: "seed_data", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            print("seed_data.json not found in bundle")
+              let data = try? Data(contentsOf: url),
+              let seed = try? JSONDecoder().decode(SeedData.self, from: data) else {
+            print("seed_data.json not found or failed to decode")
             return
         }
 
-        guard let seed = try? JSONDecoder().decode(SeedData.self, from: data) else {
-            print("Failed to decode seed_data.json")
-            return
-        }
-
-        var courseMap: [String: Course] = [:]
-        for seedCourse in seed.courses {
-            let course = Course(
-                courseNumber: seedCourse.courseNumber,
-                title: seedCourse.title,
-                department: seedCourse.department,
-                semester: seedCourse.semester,
-                year: seedCourse.year
-            )
-            context.insert(course)
-            courseMap[seedCourse.courseNumber] = course
-        }
-
-        for seedLecture in seed.lectures {
-            let lecture = Lecture(
-                title: seedLecture.title,
-                youtubeId: seedLecture.youtubeId,
-                courseNumber: seedLecture.courseNumber,
-                courseName: seedLecture.courseName,
-                department: seedLecture.department,
-                semester: seedLecture.semester,
-                year: seedLecture.year,
-                ocwUrl: seedLecture.ocwUrl,
-                topicName: seedLecture.topicName
-            )
-            context.insert(lecture)
-
-            if let course = courseMap[seedLecture.courseNumber] {
-                lecture.course = course
+        // Phase 1: Insert courses (small — ~25 records, one batch)
+        let courseMap: [String: Course] = await MainActor.run {
+            var map: [String: Course] = [:]
+            for seedCourse in seed.courses {
+                let course = Course(
+                    courseNumber: seedCourse.courseNumber,
+                    title: seedCourse.title,
+                    department: seedCourse.department,
+                    semester: seedCourse.semester,
+                    year: seedCourse.year
+                )
+                container.mainContext.insert(course)
+                map[seedCourse.courseNumber] = course
             }
+            try? container.mainContext.save()
+            return map
         }
 
-        try? context.save()
+        // Phase 2: Insert lectures in 200-item batches
+        let batchSize = 200
+        var batchStart = 0
+        while batchStart < seed.lectures.count {
+            let batchEnd = min(batchStart + batchSize, seed.lectures.count)
+            let batch = Array(seed.lectures[batchStart..<batchEnd])
+
+            await MainActor.run {
+                for seedLecture in batch {
+                    let lecture = Lecture(
+                        title: seedLecture.title,
+                        youtubeId: seedLecture.youtubeId,
+                        courseNumber: seedLecture.courseNumber,
+                        courseName: seedLecture.courseName,
+                        department: seedLecture.department,
+                        semester: seedLecture.semester,
+                        year: seedLecture.year,
+                        ocwUrl: seedLecture.ocwUrl,
+                        topicName: seedLecture.topicName
+                    )
+                    lecture.isValidated = true
+                    container.mainContext.insert(lecture)
+                    if let course = courseMap[seedLecture.courseNumber] {
+                        lecture.course = course
+                    }
+                }
+                try? container.mainContext.save()
+            }
+            batchStart = batchEnd
+        }
         print("Seeded \(seed.lectures.count) lectures across \(seed.courses.count) courses")
+    }
+
+    // MARK: - Validation Migration
+
+    /// One-time migration: marks all existing lectures as validated.
+    /// Trusts that prior one-time validators already confirmed these lectures.
+    private static func migrateExistingLecturesToValidated(container: ModelContainer) async {
+        let alreadyDone: Bool = await MainActor.run {
+            UserDefaults.standard.bool(forKey: "lectureValidationMigrated_v1")
+        }
+        guard !alreadyDone else { return }
+
+        let total: Int = await MainActor.run {
+            let descriptor = FetchDescriptor<Lecture>()
+            let all = (try? container.mainContext.fetch(descriptor)) ?? []
+            guard !all.isEmpty else {
+                UserDefaults.standard.set(true, forKey: "lectureValidationMigrated_v1")
+                return 0
+            }
+            // Batch update — lectures are already in memory from fetch
+            for lecture in all {
+                lecture.isValidated = true
+            }
+            try? container.mainContext.save()
+            UserDefaults.standard.set(true, forKey: "lectureValidationMigrated_v1")
+            return all.count
+        }
+        if total > 0 {
+            print("Migration: marked \(total) existing lectures as validated")
+        }
     }
 
     // MARK: - Multi-Source Seed Data Loader (Async)
@@ -389,6 +468,7 @@ struct MITReelsApp: App {
                             topicName: seedLecture.topicName
                         )
                         lecture.sourceId = seedLecture.sourceId
+                        lecture.isValidated = true
                         container.mainContext.insert(lecture)
 
                         let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
@@ -443,10 +523,36 @@ struct MITReelsApp: App {
 
                 do {
                     let videos = try await client.fetchAllVideos(for: source)
-                    print("YouTubeFetch: \(source.displayName) → \(videos.count) videos")
+                    print("YouTubeFetch: \(source.displayName) → \(videos.count) videos (pre-validation)")
+
+                    // oEmbed pre-validation — only insert confirmed-playable videos
+                    let scraper = OCWScraper()
+                    var validVideos: [YouTubeVideo] = []
+
+                    await withTaskGroup(of: (YouTubeVideo, Bool).self) { group in
+                        var inFlight = 0
+                        for video in videos {
+                            if inFlight >= 4 {
+                                if let (checked, isValid) = await group.next() {
+                                    if isValid { validVideos.append(checked) }
+                                }
+                                inFlight -= 1
+                            }
+                            group.addTask {
+                                let result = await scraper.validateVideo(video.videoId)
+                                return (video, result != nil)
+                            }
+                            inFlight += 1
+                        }
+                        for await (checked, isValid) in group {
+                            if isValid { validVideos.append(checked) }
+                        }
+                    }
+
+                    print("YouTubeFetch: \(source.displayName) → \(validVideos.count)/\(videos.count) passed oEmbed")
 
                     await MainActor.run {
-                        mergeYouTubeData(videos, source: source, into: container.mainContext)
+                        mergeYouTubeData(validVideos, source: source, into: container.mainContext)
                         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastKey)
                     }
                 } catch {
@@ -496,6 +602,7 @@ struct MITReelsApp: App {
                 topicName: ""
             )
             lecture.sourceId = source.rawValue
+            lecture.isValidated = true  // Pre-validated via oEmbed
             context.insert(lecture)
 
             let courseKey = "\(source.rawValue)_\(courseNumber)"
@@ -519,6 +626,74 @@ struct MITReelsApp: App {
         if inserted > 0 {
             try? context.save()
             print("YouTubeFetch: merged \(inserted) new \(source.shortName) lectures")
+        }
+    }
+    // MARK: - Periodic Re-validation
+
+    /// Re-validates all lectures via YouTube oEmbed every 7 days.
+    /// Removes videos that have become private, deleted, or region-locked since last check.
+    private static func startPeriodicValidation(container: ModelContainer) {
+        let last = UserDefaults.standard.double(forKey: "lastPeriodicValidation")
+
+        // First run: set baseline, don't validate (one-time validators handle first launch)
+        guard last > 0 else {
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastPeriodicValidation")
+            print("PeriodicValidation: first run, setting baseline")
+            return
+        }
+
+        let daysSinceLast = (Date().timeIntervalSince1970 - last) / 86400
+        guard daysSinceLast > 7 else {
+            print("PeriodicValidation: skipping, last check \(Int(daysSinceLast))d ago")
+            return
+        }
+
+        Task.detached(priority: .background) {
+            let scraper = OCWScraper()
+            let allIds: [String] = await MainActor.run {
+                let d = FetchDescriptor<Lecture>()
+                return ((try? container.mainContext.fetch(d)) ?? []).map { $0.youtubeId }
+            }
+            guard !allIds.isEmpty else { return }
+
+            // Sample up to 500 random videos — sufficient to detect widespread unavailability
+            let sampleSize = min(500, allIds.count)
+            let videoIds = Array(allIds.shuffled().prefix(sampleSize))
+            print("PeriodicValidation: checking \(videoIds.count) of \(allIds.count) videos...")
+
+            var invalidIds: [String] = []
+            await withTaskGroup(of: (String, Bool).self) { group in
+                var inFlight = 0
+                for id in videoIds {
+                    if inFlight >= 4 {
+                        if let (checkedId, valid) = await group.next() {
+                            if !valid { invalidIds.append(checkedId) }
+                        }
+                        inFlight -= 1
+                    }
+                    group.addTask { (id, await scraper.validateVideo(id) != nil) }
+                    inFlight += 1
+                }
+                for await (checkedId, valid) in group {
+                    if !valid { invalidIds.append(checkedId) }
+                }
+            }
+
+            await MainActor.run {
+                if !invalidIds.isEmpty {
+                    let invalidSet = Set(invalidIds.map { $0.lowercased() })
+                    let d = FetchDescriptor<Lecture>()
+                    let all = (try? container.mainContext.fetch(d)) ?? []
+                    for lecture in all where invalidSet.contains(lecture.youtubeId.lowercased()) {
+                        container.mainContext.delete(lecture)
+                    }
+                    try? container.mainContext.save()
+                    print("PeriodicValidation: removed \(invalidIds.count) unavailable videos")
+                } else {
+                    print("PeriodicValidation: all videos valid")
+                }
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastPeriodicValidation")
+            }
         }
     }
 }

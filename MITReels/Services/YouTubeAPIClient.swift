@@ -193,6 +193,13 @@ actor YouTubeAPIClient {
                       let videoId = raw.snippet.resourceId.videoId,
                       !videoId.isEmpty else { return nil }
 
+                // Filter known-unplayable title patterns from YouTube playlists
+                let title = raw.snippet.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                let titleLower = title.lowercased()
+                guard !title.isEmpty,
+                      titleLower != "deleted video",
+                      titleLower != "private video" else { return nil }
+
                 return YouTubeVideo(
                     videoId: videoId,
                     title: raw.snippet.title,

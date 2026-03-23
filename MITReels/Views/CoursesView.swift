@@ -18,7 +18,6 @@ struct CoursesView: View {
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
     @AppStorage("hdOnWifi") private var hdOnWifi = true
-    @AppStorage("courseViewMode") private var courseViewMode = "list"
     @StateObject private var sourcePrefs = SourcePreferences.shared
     @StateObject private var feedPrefs = FeedPreferences.shared
 
@@ -214,16 +213,6 @@ struct CoursesView: View {
                 }
 
                 SourceFilterSection(sourcePrefs: sourcePrefs)
-
-                Section {
-                    Picker("Default View", selection: $courseViewMode) {
-                        Label("List", systemImage: "list.bullet").tag("list")
-                        Label("Grid", systemImage: "square.grid.2x2").tag("grid")
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text("Course Browser").sectionHeader()
-                }
 
                 algorithmSection
             }

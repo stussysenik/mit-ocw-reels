@@ -13,8 +13,8 @@ struct ReelView: View {
     /// Driven by the parent's scroll-position tracker. Controls auto-play/pause.
     var isVisible: Bool = false
 
-    /// When true, preloads the video player (hidden) so it's ready when scrolled to.
-    var isNext: Bool = false
+    /// When true, preloads the video player (hidden) — covers both prev and next reels.
+    var isNearby: Bool = false
 
     /// When false, videos won't auto-play on scroll — user must tap play manually.
     var autoplayEnabled: Bool = true
@@ -37,24 +37,22 @@ struct ReelView: View {
     @State private var isPlaying = false
     @State private var seekTarget: Double? = nil
 
-    /// Pre-computed source label — "Engineering" for MIT, "Stanford" for Stanford, etc.
     private let sourceName: String
-    /// Pre-computed accent color — school color for MIT, brand color for others.
     private let accentColor: Color
-    /// Pre-computed display label — immutable for this view's lifetime.
     private let displayLabel: String
+    private let haptic = UIImpactFeedbackGenerator(style: .light)
 
     init(
         lecture: Lecture,
         lectureIndex: Int? = nil,
         isVisible: Bool = false,
-        isNext: Bool = false,
+        isNearby: Bool = false,
         autoplayEnabled: Bool = true,
         captionsEnabled: Bool = true,
         onViewCourse: ((Lecture) -> Void)? = nil
     ) {
         self.lecture = lecture
-        self.isNext = isNext
+        self.isNearby = isNearby
         self.lectureIndex = lectureIndex
         self.isVisible = isVisible
         self.autoplayEnabled = autoplayEnabled
@@ -105,92 +103,58 @@ struct ReelView: View {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(16 / 9, contentMode: .fit)
 
-            // Metadata — two rows: text on top (full width), actions below (right-aligned)
-            VStack(alignment: .leading, spacing: 2) {
-                // Row 1: Source · Course · Semester · Instructor — full width
-                HStack(spacing: 6) {
-                    Text(sourceName)
+            // Metadata — single line: source · course left, thumbs group + chevron right
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 0) {
+                    (Text(sourceName).foregroundStyle(accentColor)
+                     + Text(" \u{00B7} ").foregroundStyle(CarbonColor.textTertiary)
+                     + Text(lecture.courseName).foregroundStyle(CarbonColor.textLabel))
                         .font(Typography.reelMeta)
-                        .foregroundStyle(accentColor)
-
-                    Text("\u{00B7}")
-                        .foregroundStyle(CarbonColor.textTertiary)
-
-                    Text(lecture.courseName)
-                        .font(Typography.reelMeta)
-                        .foregroundStyle(CarbonColor.textLabel)
-                        .lineLimit(showFullLabels ? nil : 1)
-
-                    if !lecture.semester.isEmpty && lecture.year > 0 {
-                        Text("\u{00B7}")
-                            .foregroundStyle(CarbonColor.textTertiary)
-
-                        Text("\(lecture.semester) \(String(lecture.year))")
-                            .font(Typography.reelMeta)
-                            .foregroundStyle(CarbonColor.textPlaceholder)
-                    }
-
-                    if !lecture.instructor.isEmpty {
-                        Text("\u{00B7}")
-                            .foregroundStyle(CarbonColor.textTertiary)
-
-                        Text(lecture.instructor)
-                            .font(Typography.reelMeta)
-                            .foregroundStyle(CarbonColor.textPlaceholder)
-                            .lineLimit(showFullLabels ? nil : 1)
-                    }
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) { showFullLabels.toggle() }
-                }
-
-                // Row 2: Actions — right-aligned
-                HStack(spacing: Spacing.sm) {
-                    Spacer()
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
-                        withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
-                        showToast("More like this")
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            withAnimation { showLiked = false }
+                        .lineLimit(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) { showFullLabels.toggle() }
                         }
-                    } label: {
-                        Image(systemName: showLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
-                            .font(.caption)
-                            .foregroundStyle(showLiked ? .green : CarbonColor.textTertiary)
-                            .frame(width: 36, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    Button {
-                        FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
-                        withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
-                        showToast("Less like this")
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+                    Spacer(minLength: Spacing.xs)
+
+                    HStack(spacing: 0) {
+                        iconButton("hand.thumbsup", filled: showLiked, activeColor: .green) {
+                            haptic.impactOccurred()
+                            FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
+                            withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
+                            showToast("More like this")
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                withAnimation { self.showLiked = false }
+                            }
                         }
-                    } label: {
-                        Image(systemName: showDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                            .font(.caption)
-                            .foregroundStyle(showDisliked ? CarbonColor.interactive : CarbonColor.textTertiary)
-                            .frame(width: 36, height: 28)
-                            .contentShape(Rectangle())
+                        iconButton("hand.thumbsdown", filled: showDisliked, activeColor: CarbonColor.interactive) {
+                            FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
+                            withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
+                            showToast("Less like this")
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.haptic.impactOccurred()
+                            }
+                        }
                     }
+
                     if onViewCourse != nil {
-                        Button { onViewCourse?(lecture) } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.caption2.weight(.medium))
-                                .foregroundStyle(CarbonColor.textTertiary)
-                                .frame(width: 36, height: 28)
-                                .contentShape(Rectangle())
+                        iconButton("chevron.right", filled: false, activeColor: .clear, font: .caption2.weight(.medium)) {
+                            onViewCourse?(lecture)
                         }
                     }
+                }
+
+                // Expanded: semester · instructor (tap metadata to toggle)
+                if showFullLabels, let detail = expandedDetail {
+                    Text(detail)
+                        .font(Typography.reelMeta)
+                        .foregroundStyle(CarbonColor.textPlaceholder)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
             .padding(.horizontal, Spacing.md)
-            .padding(.top, Spacing.sm)
-            .padding(.bottom, Spacing.xs)
+            .padding(.top, Spacing.xs)
 
             // OCW links (YouTube is accessible via the overlay button on the video)
             if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
@@ -205,7 +169,7 @@ struct ReelView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, Spacing.md)
-                .padding(.top, Spacing.xs)
+                .padding(.top, 4)
             }
 
             Spacer(minLength: 0)
@@ -214,7 +178,7 @@ struct ReelView: View {
         .geometryGroup()
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
-            if !visible && !isNext {
+            if !visible && !isNearby {
                 isVideoLoading = true
                 hasVideoError = false
                 currentTime = 0
@@ -247,6 +211,29 @@ struct ReelView: View {
         }
     }
 
+    // MARK: - Helpers
+
+    private func iconButton(
+        _ name: String, filled: Bool, activeColor: Color,
+        font: Font = .caption, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: filled ? "\(name).fill" : name)
+                .font(font)
+                .foregroundStyle(filled ? activeColor : CarbonColor.textTertiary)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private var expandedDetail: String? {
+        let parts = [
+            (!lecture.semester.isEmpty && lecture.year > 0) ? "\(lecture.semester) \(lecture.year)" : nil,
+            (!lecture.instructor.isEmpty) ? lecture.instructor : nil
+        ].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " \u{00B7} ")
+    }
+
     // MARK: - Video Player
 
     private var videoPlayer: some View {
@@ -260,7 +247,7 @@ struct ReelView: View {
                     }
 
                 // Preload: create WKWebView when visible OR next (TikTok-style preloading)
-                if isVisible || isNext {
+                if isVisible || isNearby {
                     YouTubePlayerView(
                         videoId: lecture.youtubeId,
                         autoplay: isVisible && autoplayEnabled,

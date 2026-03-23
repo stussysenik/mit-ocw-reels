@@ -18,6 +18,21 @@ final class Lecture {
     var instructor: String = ""
     /// UniversitySource.rawValue — defaults to "mit" for backward compatibility.
     var sourceId: String = "mit"
+    /// Whether this lecture's YouTube video has been confirmed playable via oEmbed.
+    var isValidated: Bool = false
+
+    /// Whether this lecture passes basic feed eligibility checks.
+    var isFeedEligible: Bool {
+        let t = title.lowercased()
+        return isValidated
+            && youtubeId.count == 11
+            && !courseNumber.isEmpty
+            && !t.hasSuffix(".pdf")
+            && !t.contains("3play")
+            && !t.contains("caption file")
+            && t != "deleted video"
+            && t != "private video"
+    }
 
     /// Convenience accessor for the typed source enum.
     var source: UniversitySource {

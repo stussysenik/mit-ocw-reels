@@ -10,6 +10,8 @@ struct CourseReelsView: View {
     /// Optional starting lecture — when set, scrolls to this lecture on appear (from Discover feed).
     var initialLectureId: String? = nil
     @State private var visibleId: String?
+    @State private var nextId: String?
+    @State private var prevId: String?
     @State private var cachedLectures: [Lecture] = []
     @State private var hasScrolled = false
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
@@ -27,12 +29,6 @@ struct CourseReelsView: View {
                 )
             } else {
                 ScrollView(.vertical) {
-                    let nextId: String? = {
-                        guard let vid = visibleId,
-                              let idx = cachedLectures.firstIndex(where: { $0.youtubeId == vid }),
-                              idx + 1 < cachedLectures.count else { return nil }
-                        return cachedLectures[idx + 1].youtubeId
-                    }()
                     LazyVStack(spacing: 0) {
                         ForEach(
                             Array(cachedLectures.enumerated()),
@@ -42,7 +38,7 @@ struct CourseReelsView: View {
                                 lecture: lecture,
                                 lectureIndex: index,
                                 isVisible: visibleId == lecture.youtubeId,
-                                isNext: lecture.youtubeId == nextId,
+                                isNearby: lecture.youtubeId == nextId || lecture.youtubeId == prevId,
                                 autoplayEnabled: autoplayEnabled,
                                 captionsEnabled: captionsEnabled
                             )
@@ -63,15 +59,45 @@ struct CourseReelsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             haptic.prepare()
-            cachedLectures = (course.lectures ?? []).uniqued(by: { $0.youtubeId.lowercased() })
+            cachedLectures = (course.lectures ?? [])
+                .filter { $0.isFeedEligible }
+                .uniqued(by: { $0.youtubeId.lowercased() })
             if let initialId = initialLectureId, visibleId == nil {
                 visibleId = initialId
             }
         }
-        .onChange(of: visibleId) { old, _ in
+        .onChange(of: visibleId) { old, new in
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
+            // Capture @State values before entering async Task to avoid Binding resolution
+            let lectures = cachedLectures
+            let vid = visibleId
+            // Defer preload updates to after scroll animation settles
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                let adj = lectures.adjacentIds(for: vid)
+                nextId = adj.next
+                prevId = adj.prev
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in
+            guard let endedId = note.object as? String, endedId == visibleId,
+                  let idx = cachedLectures.firstIndex(where: { $0.youtubeId == endedId }),
+                  idx + 1 < cachedLectures.count else { return }
+            withAnimation { visibleId = cachedLectures[idx + 1].youtubeId }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
+            guard let videoId = note.object as? String else { return }
+            if videoId == visibleId,
+               let idx = cachedLectures.firstIndex(where: { $0.youtubeId == videoId }) {
+                let next = idx + 1 < cachedLectures.count ? idx + 1
+                         : idx - 1 >= 0 ? idx - 1 : nil
+                if let next {
+                    withAnimation { visibleId = cachedLectures[next].youtubeId }
+                }
+            }
+            cachedLectures.removeAll { $0.youtubeId == videoId }
         }
     }
 }
