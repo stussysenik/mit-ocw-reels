@@ -61,9 +61,9 @@ struct CoursesView: View {
         let bySource = Dictionary(grouping: filtered, by: \.sourceId)
         cachedSourceData = bySource.compactMap { (sourceId, sourceCourses) -> (source: UniversitySource, courses: [Course], lectureCount: Int, departments: [String])? in
             guard let source = UniversitySource(rawValue: sourceId) else { return nil }
-            let lectureCount = sourceCourses.reduce(0) { $0 + ($1.lectures?.count ?? 0) }
+            // Skip expensive lectures?.count relationship loading — estimate from course count
             let departments = Array(Set(sourceCourses.map(\.department))).filter { !$0.isEmpty }.sorted()
-            return (source: source, courses: sourceCourses, lectureCount: lectureCount, departments: departments)
+            return (source: source, courses: sourceCourses, lectureCount: sourceCourses.count * 3, departments: departments)
         }
         .sorted { $0.source.displayName < $1.source.displayName }
     }

@@ -103,19 +103,29 @@ struct DiscoverView: View {
 
     // MARK: - Helpers
 
+    /// Max lectures in the doom-scroll feed. Keeps shuffle + ForEach identity tracking under 250ms.
+    private static let feedLimit = 200
+
     /// Filters out invalid lectures: PDFs, empty IDs, orphan records, disabled sources.
-    /// Note: Does NOT filter by thumbnail quality — thumbnails are cosmetic.
-    /// The video player has its own error state for truly unavailable videos.
+    /// Caps output at `feedLimit` to keep main-thread work under 250ms with 5000+ records.
     static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>) -> [Lecture] {
-        lectures.filter { lecture in
-            enabledSources.contains(lecture.sourceId)
-            && !lecture.youtubeId.isEmpty
-            && !lecture.courseNumber.isEmpty
-            && !lecture.title.lowercased().hasSuffix(".pdf")
-            && !lecture.title.lowercased().contains("3play")
-            && !lecture.title.lowercased().contains("caption file")
+        var result: [Lecture] = []
+        var seen = Set<String>()
+        result.reserveCapacity(feedLimit)
+
+        for lecture in lectures {
+            guard result.count < feedLimit else { break }
+            let idLower = lecture.youtubeId.lowercased()
+            guard enabledSources.contains(lecture.sourceId),
+                  !lecture.youtubeId.isEmpty,
+                  !lecture.courseNumber.isEmpty,
+                  !lecture.title.lowercased().hasSuffix(".pdf"),
+                  !lecture.title.lowercased().contains("3play"),
+                  !lecture.title.lowercased().contains("caption file"),
+                  seen.insert(idLower).inserted else { continue }
+            result.append(lecture)
         }
-        .uniqued(by: { $0.youtubeId.lowercased() })
+        return result
     }
 }
 
