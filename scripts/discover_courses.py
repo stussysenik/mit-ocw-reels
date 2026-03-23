@@ -34,11 +34,23 @@ CHANNELS = [
     ("3blue1brown", "3Blue1Brown", "UCYO_jab_esuFRV4b17AJtAw"),
     ("khan_academy", "Khan Academy", "UC4a-Gbdw7vOaccHmFo40b9g"),
     ("crash_course", "CrashCourse", "UCX6b17PVsYBQ0ip5gyeme-Q"),
+    # Python / Computer Vision
+    ("pyimagesearch", "PyImageSearch", "UCoQK7OVcIVy-nV4m-SMCk_Q"),
+    ("murtaza_workshop", "Murtaza's Workshop", "UCYUjYU5FveRAscQ8V21w81A"),
+    ("nicholas_renotte", "Nicholas Renotte", "UCHXa4OpASJEwrHrLeIzw7Yg"),
+    ("krish_naik", "Krish Naik", "UCNU_lfiiWBdtULKOw6X0Dig"),
+    ("opencv_official", "OpenCV", "UCkrcW82Y2kbgU-U9RaYfgxw"),
+    # Maker / CNC
+    ("stuff_made_here", "Stuff Made Here", "UCj1VqrHhDte54oLgPG4xpuQ"),
+    ("titans_cnc", "TITANS of CNC", "UCc2lUKVOTXKlQR7Fm7h1JfQ"),
+    # Enterprise / Research
+    ("ibm_technology", "IBM Technology", "UC8cc4pVKVHG7A9fbNsRNrLQ"),
+    ("wolfram_research", "Wolfram", "UCJekgf6k62CQHdENWf2NgAQ"),
 ]
 
 # Department inference from playlist title keywords
 DEPT_KEYWORDS = {
-    "Computer Science": ["cs", "programming", "algorithm", "data structure", "software", "computer", "code", "python", "java", "machine learning", "artificial intelligence", "deep learning", "neural", "database", "operating system", "compiler", "web development"],
+    "Computer Science": ["cs", "programming", "algorithm", "data structure", "software", "computer", "code", "python", "java", "machine learning", "artificial intelligence", "deep learning", "neural", "database", "operating system", "compiler", "web development", "computer vision", "opencv", "image processing", "object detection", "yolo", "tensorflow", "pytorch"],
     "Mathematics": ["math", "calculus", "linear algebra", "statistics", "probability", "differential", "topology", "abstract algebra", "number theory", "geometry", "discrete"],
     "Physics": ["physics", "mechanics", "quantum", "thermodynamics", "electromagnetism", "relativity", "optics", "waves", "astrophysics"],
     "Chemistry": ["chemistry", "organic", "inorganic", "biochemistry", "chemical"],

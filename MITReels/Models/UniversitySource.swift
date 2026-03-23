@@ -34,6 +34,21 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
     case georgeHotz = "george_hotz"
     case nvidiadev = "nvidia_dev"
 
+    // Python / Computer Vision
+    case pyImageSearch = "pyimagesearch"
+    case murtazaWorkshop = "murtaza_workshop"
+    case nicholasRenotte = "nicholas_renotte"
+    case krishNaik = "krish_naik"
+    case opencvOfficial = "opencv_official"
+
+    // Maker / CNC
+    case stuffMadeHere = "stuff_made_here"
+    case titansCNC = "titans_cnc"
+
+    // Enterprise / Research
+    case ibmTechnology = "ibm_technology"
+    case wolframResearch = "wolfram_research"
+
     // Quant / Finance
     case janeStreet = "jane_street"
 
@@ -109,6 +124,18 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         .andrejKarpathy:   Meta(display: "Andrej Karpathy",     short: "Karpathy",     icon: "brain.head.profile",   brand: 0x34495E, gradient: 0x5D6D7E, channel: "UCXUPKJO5MZQN11PqgIvyuvQ", university: false),
         .georgeHotz:       Meta(display: "george hotz",         short: "geohot",       icon: "terminal",             brand: 0x1ABC9C, gradient: 0x48C9B0, channel: "UCwgKmJM4ZJQRJ-U5NjvR2dg", university: false),
         .nvidiadev:        Meta(display: "NVIDIA Developer",    short: "NVIDIA",       icon: "square.stack.3d.up",   brand: 0x76B900, gradient: 0xA3D940, channel: "UCBHcMCGaiJhv-ESTcWGJPcw", university: false),
+        // Python / Computer Vision
+        .pyImageSearch:    Meta(display: "PyImageSearch",       short: "PyImageSearch",icon: "eye",                  brand: 0x4A90D9, gradient: 0x7BB3E5, channel: "UCoQK7OVcIVy-nV4m-SMCk_Q", university: false),
+        .murtazaWorkshop:  Meta(display: "Murtaza's Workshop",  short: "Murtaza",      icon: "camera.viewfinder",    brand: 0xE74C3C, gradient: 0xF07070, channel: "UCYUjYU5FveRAscQ8V21w81A", university: false),
+        .nicholasRenotte:  Meta(display: "Nicholas Renotte",    short: "N. Renotte",   icon: "person.crop.rectangle",brand: 0x2ECC71, gradient: 0x5DECA0, channel: "UCHXa4OpASJEwrHrLeIzw7Yg", university: false),
+        .krishNaik:        Meta(display: "Krish Naik",          short: "Krish Naik",   icon: "graduationcap.fill",   brand: 0x9B59B6, gradient: 0xBB8FCE, channel: "UCNU_lfiiWBdtULKOw6X0Dig", university: false),
+        .opencvOfficial:   Meta(display: "OpenCV",              short: "OpenCV",       icon: "camera.filters",       brand: 0x76B900, gradient: 0xA3D940, channel: "UCkrcW82Y2kbgU-U9RaYfgxw", university: false),
+        // Maker / CNC
+        .stuffMadeHere:    Meta(display: "Stuff Made Here",     short: "SMH",          icon: "hammer.fill",          brand: 0x2C3E50, gradient: 0x5D6D7E, channel: "UCj1VqrHhDte54oLgPG4xpuQ", university: false),
+        .titansCNC:        Meta(display: "TITANS of CNC",       short: "TITANS",       icon: "gearshape",            brand: 0xE74C3C, gradient: 0xF07070, channel: "UCc2lUKVOTXKlQR7Fm7h1JfQ", university: false),
+        // Enterprise / Research
+        .ibmTechnology:    Meta(display: "IBM Technology",      short: "IBM",          icon: "server.rack",          brand: 0x0530AD, gradient: 0x3A6BD8, channel: "UC8cc4pVKVHG7A9fbNsRNrLQ", university: false),
+        .wolframResearch:  Meta(display: "Wolfram",             short: "Wolfram",      icon: "x.squareroot",         brand: 0xDD1100, gradient: 0xF04040, channel: "UCJekgf6k62CQHdENWf2NgAQ", university: false),
         // Quant
         .janeStreet:       Meta(display: "Jane Street",         short: "Jane Street",  icon: "chart.bar",            brand: 0x0D3B66, gradient: 0x1A6B99, channel: "UCDsVC_ewpcEW_AQcO-H-RDQ", university: false),
         // Dev tooling

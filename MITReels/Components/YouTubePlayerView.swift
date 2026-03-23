@@ -10,6 +10,7 @@ struct YouTubePlayerView: UIViewRepresentable {
     let videoId: String
     var autoplay: Bool = false
     var captionsEnabled: Bool = true
+    @AppStorage("hdOnWifi") private var hdOnWifi = true
     @Binding var isLoading: Bool
     @Binding var hasError: Bool
     @Binding var currentTime: Double
@@ -22,6 +23,10 @@ struct YouTubePlayerView: UIViewRepresentable {
     /// The binding resets to `nil` after the seek is dispatched.
     @Binding var seekTo: Double?
 
+    private var resolvedQuality: String {
+        (hdOnWifi && NetworkMonitor.shared.isWiFi) ? "hd1080" : "medium"
+    }
+
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }
@@ -33,6 +38,10 @@ struct YouTubePlayerView: UIViewRepresentable {
         config.mediaTypesRequiringUserActionForPlayback = []
         config.preferences.isElementFullscreenEnabled = true
 
+        // Listen for YouTube state events from the iframe
+        let contentController = config.userContentController
+        contentController.add(context.coordinator, name: "ytEvent")
+
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.scrollView.isScrollEnabled = false
         webView.isOpaque = false
@@ -41,7 +50,8 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
 
-        let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled)
+        let quality = resolvedQuality
+        let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled, qualityHint: quality)
         webView.loadHTMLString(html, baseURL: URL(string: "https://mitreels.app"))
         return webView
     }
@@ -53,7 +63,8 @@ struct YouTubePlayerView: UIViewRepresentable {
             context.coordinator.currentVideoId = videoId
             context.coordinator.hasFinishedLoad = false
             DispatchQueue.main.async { self.isLoading = true; self.hasError = false }
-            let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled)
+            let quality = resolvedQuality
+            let html = Self.embedHTML(videoId: videoId, autoplay: autoplay, captions: captionsEnabled, qualityHint: quality)
             webView.loadHTMLString(html, baseURL: URL(string: "https://mitreels.app"))
         }
 
@@ -78,6 +89,7 @@ struct YouTubePlayerView: UIViewRepresentable {
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.stopLoading()
         webView.navigationDelegate = nil
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "ytEvent")
         coordinator.webView = nil
         webView.loadHTMLString("", baseURL: nil)
     }
@@ -90,12 +102,13 @@ struct YouTubePlayerView: UIViewRepresentable {
         return videoId.wholeMatch(of: pattern) != nil ? videoId : nil
     }
 
-    private static func embedHTML(videoId: String, autoplay: Bool, captions: Bool = true) -> String {
+    private static func embedHTML(videoId: String, autoplay: Bool, captions: Bool = true, qualityHint: String = "hd1080") -> String {
         guard let safeId = sanitizedVideoId(videoId) else {
             return "<html><body style='background:#000'></body></html>"
         }
         let autoplayParam = autoplay ? "1" : "0"
         let captionParams = captions ? "&cc_load_policy=1&cc_lang_pref=en" : ""
+        let qualityParam = "&vq=\(qualityHint)"
         return """
         <!DOCTYPE html>
         <html>
@@ -110,10 +123,13 @@ struct YouTubePlayerView: UIViewRepresentable {
         <body>
         <iframe
             id="ytplayer"
-            src="https://www.youtube.com/embed/\(safeId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1\(captionParams)&origin=https://mitreels.app"
+            src="https://www.youtube.com/embed/\(safeId)?playsinline=1&autoplay=\(autoplayParam)&rel=0&modestbranding=1&controls=1&fs=1&enablejsapi=1\(captionParams)\(qualityParam)&origin=https://mitreels.app"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowfullscreen>
         </iframe>
+        <script>
+        window.addEventListener('message',function(e){try{var d=JSON.parse(e.data);if(d.event==='onStateChange'&&d.info===0){window.webkit.messageHandlers.ytEvent.postMessage('ended');}}catch(x){}});
+        </script>
         </body>
         </html>
         """
@@ -121,16 +137,24 @@ struct YouTubePlayerView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, WKNavigationDelegate {
+    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: YouTubePlayerView
         weak var webView: WKWebView?
         var currentVideoId: String = ""
         var lastPlayingState: Bool = false
         var hasFinishedLoad = false
 
+        static let videoEndedNotification = Notification.Name("youtubeVideoEnded")
+
         init(parent: YouTubePlayerView) {
             self.parent = parent
             self.currentVideoId = parent.videoId
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name == "ytEvent", (message.body as? String) == "ended" {
+                NotificationCenter.default.post(name: Self.videoEndedNotification, object: currentVideoId)
+            }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

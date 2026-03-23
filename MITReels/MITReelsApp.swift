@@ -114,7 +114,7 @@ struct MITReelsApp: App {
         // Delay to let multi-source seed finish first
         Task.detached(priority: .background) {
             // Wait for multi-source seed to complete
-            while !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v6") {
+            while !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v8") {
                 try? await Task.sleep(for: .seconds(2))
             }
 
@@ -320,7 +320,7 @@ struct MITReelsApp: App {
     /// Seeds non-MIT lecture sources from multi_source_seed.json in a background task.
     /// Uses separate MainActor.run blocks per batch so UI renders between batches.
     private static func startMultiSourceSeed(container: ModelContainer) {
-        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v6") else { return }
+        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v8") else { return }
 
         Task.detached(priority: .utility) {
             guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
@@ -407,7 +407,7 @@ struct MITReelsApp: App {
             }
 
             await MainActor.run {
-                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v6")
+                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v8")
             }
             print("Multi-source seed: \(totalInserted) lectures across \(seed.courses.count) courses")
         }

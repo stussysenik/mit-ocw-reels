@@ -1,30 +1,6 @@
 {
   "lectures": [
     {
-      "title": "Vivo showcased its next flagship phone the X300 Ultra at the Mobile World Congress in Barcelona.",
-      "youtubeId": "jp_nC1ZpB8Y",
-      "courseNumber": "MWC - 2026",
-      "courseName": "MWC - 2026",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The Verge news editor, Dominic Preston, got an up close look at Honor's Robot Phone.",
-      "youtubeId": "qFkYYDHJolw",
-      "courseNumber": "MWC - 2026",
-      "courseName": "MWC - 2026",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Have you actually wanted a foldable screen for your gaming handheld? #tech #lenovo",
       "youtubeId": "m0TDwYdIOzE",
       "courseNumber": "MWC - 2026",
@@ -39,18 +15,6 @@
     {
       "title": "We'll need to try a live demo of Super Clear Call to see how well it compares.",
       "youtubeId": "PNdiu2h6xno",
-      "courseNumber": "Samsung Unpacked -",
-      "courseName": "Samsung Unpacked - 2026",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy Unpacked 2026 in 12 minutes",
-      "youtubeId": "0ZTRxqVhXJo",
       "courseNumber": "Samsung Unpacked -",
       "courseName": "Samsung Unpacked - 2026",
       "department": "General",
@@ -97,32 +61,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Best of CES 2026",
-      "youtubeId": "74GPI45oUDk",
-      "courseNumber": "CES - 2026",
-      "courseName": "CES - 2026",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "#ad Smartwatches, VR, and foldable phones all rely on it.",
       "youtubeId": "9yQkM-Xh1kM",
-      "courseNumber": "Hype Desk",
-      "courseName": "Hype Desk",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "#ad Turns out the TV industry needed a 130-inch absorbing polarizer, so 3M made one for CES 2026.",
-      "youtubeId": "O9BpG-9o9FQ",
       "courseNumber": "Hype Desk",
       "courseName": "Hype Desk",
       "department": "General",
@@ -205,32 +145,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Apple Intelligence, iPhones, and the rest of WWDC 2024 | The Vergecast",
-      "youtubeId": "6rYkDmWokO0",
-      "courseNumber": "WWDC 2024",
-      "courseName": "WWDC 2024 | The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "iJustine: the YouTuber that never quit",
       "youtubeId": "V0BTEYkH56g",
-      "courseNumber": "Full Frame: Creators",
-      "courseName": "Full Frame: Creators",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "How unboxing videos got this sneakerhead to the PGA",
-      "youtubeId": "LIFgShSmAV0",
       "courseNumber": "Full Frame: Creators",
       "courseName": "Full Frame: Creators",
       "department": "General",
@@ -289,42 +205,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "The swagged-out pope is an AI fake | The Vergecast",
-      "youtubeId": "WvnMIPQLauc",
-      "courseNumber": "Vergecast Clips -",
-      "courseName": "Vergecast Clips - The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "GPT-4 is here but no longer open source | The Vergecast",
-      "youtubeId": "YCmGVXlpE3k",
-      "courseNumber": "Vergecast Clips -",
-      "courseName": "Vergecast Clips - The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Spotify wants to be TikTok now? | The Vergecast",
-      "youtubeId": "p4x6L9f5Us0",
-      "courseNumber": "Vergecast Clips -",
-      "courseName": "Vergecast Clips - The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Was that a Sony Afeela car being driven by a PlayStation controller? #CES2024 #Technology",
       "youtubeId": "Y752FtJDuf8",
       "courseNumber": "CES 2024",
@@ -339,18 +219,6 @@
     {
       "title": "Samsung revealed its new version of Ballie, an AI-powered home robot. #CES2024 #Technology",
       "youtubeId": "PUz9bSxqLjM",
-      "courseNumber": "CES 2024",
-      "courseName": "CES 2024",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The Matic robot vacuum at CES 2024 is definitely not crying over any spilled messes, milk included.",
-      "youtubeId": "KtxrtYAbDCo",
       "courseNumber": "CES 2024",
       "courseName": "CES 2024",
       "department": "General",
@@ -481,30 +349,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "RIP Trifold | The Vergecast",
-      "youtubeId": "ZHN5i8BdcbQ",
-      "courseNumber": "The Vergecast",
-      "courseName": "The Vergecast",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The future of code is exciting and terrifying | The Vergecast",
-      "youtubeId": "d_s-owPs-G8",
-      "courseNumber": "The Vergecast",
-      "courseName": "The Vergecast",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Alienware’s m18, 500Hz gaming monitor (and all of Dell’s CES gaming announcements)",
       "youtubeId": "AsVhXW6vnig",
       "courseNumber": "CES 2023",
@@ -543,18 +387,6 @@
     {
       "title": "Lenovo ThinkPad Z-Series: the new laptops on the block",
       "youtubeId": "4IKUEpn1DjE",
-      "courseNumber": "CES 2022",
-      "courseName": "CES 2022 - The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Alienware at CES 2022: QD-OLED monitor, X14 laptop and Concept Nyx",
-      "youtubeId": "mOO2vp7cB7I",
       "courseNumber": "CES 2022",
       "courseName": "CES 2022 - The Verge",
       "department": "General",
@@ -709,18 +541,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Hands-on with the Pixel 9 Pro’s camera",
-      "youtubeId": "9Yg1RjQAdu8",
-      "courseNumber": "Full Frame with",
-      "courseName": "Full Frame with Becca Farsace",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Sony’s new $999 camera vs. an iPhone 15 Pro Max",
       "youtubeId": "BP7FZsx0gz4",
       "courseNumber": "Full Frame with",
@@ -829,18 +649,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Sony at CES 2020 in under 6 minutes",
-      "youtubeId": "yxQYSR8D56Y",
-      "courseNumber": "Supercuts",
-      "courseName": "Supercuts",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Google Pixel Buds (2020) review: mic test included",
       "youtubeId": "aMKgWMO3fu8",
       "courseNumber": "Google Pixel",
@@ -889,58 +697,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Android 11 hands-on: all the features!",
-      "youtubeId": "8yKYWACmGXc",
-      "courseNumber": "Software Updates",
-      "courseName": "Software Updates",
-      "department": "Computer Science",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "Computer Science",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy S20 and S20 Ultra hands-on",
-      "youtubeId": "aWyKOFW7edg",
-      "courseNumber": "Samsung Unpacked Eve",
-      "courseName": "Samsung Unpacked Event 2020",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Samsung Galaxy S20 event in under 6 minutes",
       "youtubeId": "guptCU6yUEk",
       "courseNumber": "Samsung Unpacked Eve",
       "courseName": "Samsung Unpacked Event 2020",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy Z Flip hands-on",
-      "youtubeId": "EgyV_89ptI8",
-      "courseNumber": "Samsung Unpacked Eve",
-      "courseName": "Samsung Unpacked Event 2020",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Lenovo ThinkPad X1 Fold hands-on",
-      "youtubeId": "R-4tQbdjMHs",
-      "courseNumber": "Foldables",
-      "courseName": "Foldables",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -965,30 +725,6 @@
       "youtubeId": "1yhwUqV_DJM",
       "courseNumber": "Foldables",
       "courseName": "Foldables",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Galaxy S10 Lite and Note 10 Lite hands-on: but why?",
-      "youtubeId": "3YFQu8jcPF4",
-      "courseNumber": "CES 2020",
-      "courseName": "CES 2020 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung's new 8K bezel-less and rotating TVs at CES 2020",
-      "youtubeId": "R_6ulKjaS-w",
-      "courseNumber": "CES 2020",
-      "courseName": "CES 2020 – The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -1045,54 +781,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Pixelbook Go hands-on: Google’s cheapest Chromebook yet",
-      "youtubeId": "bvpcfAayjtY",
-      "courseNumber": "Google Pixel 4",
-      "courseName": "Google Pixel 4 event – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Pixel 4 and 4 XL hands-on: what the leaks didn’t tell you",
-      "youtubeId": "phZ0vwHss0I",
-      "courseNumber": "Google Pixel 4",
-      "courseName": "Google Pixel 4 event – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Microsoft Surface Pro X and Pro 7 hands-on",
-      "youtubeId": "kEhRBd5t8ag",
-      "courseNumber": "Microsoft Surface Ev",
-      "courseName": "Microsoft Surface Event 2019",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Surface Laptop 3 hands-on",
-      "youtubeId": "_PFXssNKGLA",
-      "courseNumber": "Microsoft Surface Ev",
-      "courseName": "Microsoft Surface Event 2019",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Surface Neo first look: Microsoft's dual-screen prototype",
       "youtubeId": "WrR5KApQnsg",
       "courseNumber": "Microsoft Surface Ev",
@@ -1141,68 +829,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Amazon Echo Frames hands-on",
-      "youtubeId": "hCKstxDONWI",
-      "courseNumber": "Amazon Hardware Even",
-      "courseName": "Amazon Hardware Event 2019",
-      "department": "History",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "History",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Amazon Echo Buds hands-on",
-      "youtubeId": "MDN2RRaY1po",
-      "courseNumber": "Amazon Hardware Even",
-      "courseName": "Amazon Hardware Event 2019",
-      "department": "History",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "History",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Echo Loop hands-on: Amazon's smart ring",
-      "youtubeId": "-9PIcwUZvBU",
-      "courseNumber": "Amazon Hardware Even",
-      "courseName": "Amazon Hardware Event 2019",
-      "department": "History",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "History",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Apple iPhone 11 and 11 Pro event in 11 minutes",
       "youtubeId": "p6XBRvfupm0",
-      "courseNumber": "Apple iPhone 11",
-      "courseName": "Apple iPhone 11 Event 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "iPhone 11 Pro and 11 Pro Max hands-on",
-      "youtubeId": "eu5y9X1B3bg",
-      "courseNumber": "Apple iPhone 11",
-      "courseName": "Apple iPhone 11 Event 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Apple iPad 10.2-inch 2019 hands-on",
-      "youtubeId": "Gwc8nPJ-Q18",
       "courseNumber": "Apple iPhone 11",
       "courseName": "Apple iPhone 11 Event 2019 – The Verge",
       "department": "General",
@@ -1429,46 +1057,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Android Q: exclusive hands-on with the new features",
-      "youtubeId": "vnt6GBmnpjE",
-      "courseNumber": "Google I/O 2019",
-      "courseName": "Google I/O 2019 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Google Pixel 3A review: a $399 phone with a great camera",
       "youtubeId": "SH88jkuzICU",
       "courseNumber": "Google I/O 2019",
       "courseName": "Google I/O 2019 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Nest Hub Max hands-on: Google’s first smart display with a camera",
-      "youtubeId": "uWDAJjqBIxY",
-      "courseNumber": "Google I/O 2019",
-      "courseName": "Google I/O 2019 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Motorola Razr hands-on: the foldable phone we’ve wanted",
-      "youtubeId": "3IEDFC8NZqA",
-      "courseNumber": "Foldable phones –",
-      "courseName": "Foldable phones – The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -1753,32 +1345,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Nokia 9 hands-on: too many cameras?",
-      "youtubeId": "91gH8gIVIMQ",
-      "courseNumber": "MWC 2019",
-      "courseName": "MWC 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "The new Sony Xperia lineup is really tall",
       "youtubeId": "Qstax83hB8U",
-      "courseNumber": "MWC 2019",
-      "courseName": "MWC 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "G8 ThinQ hands-on: LG's newest flagship",
-      "youtubeId": "XkORvuGkCto",
       "courseNumber": "MWC 2019",
       "courseName": "MWC 2019 – The Verge",
       "department": "General",
@@ -1837,44 +1405,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Samsung Galaxy Watch Active hands-on: bye rotating bezels",
-      "youtubeId": "yMihGtItxEI",
-      "courseNumber": "Samsung Unpacked Eve",
-      "courseName": "Samsung Unpacked Event 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy S10 lineup hands-on",
-      "youtubeId": "aVhHYmdRVPo",
-      "courseNumber": "Samsung Unpacked Eve",
-      "courseName": "Samsung Unpacked Event 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Software is eating the world. And it’s only the beginning.",
       "youtubeId": "UW5ktbit2s0",
-      "courseNumber": "AI – The",
-      "courseName": "AI – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "I rode a semi-autonomous truck at CES 2019",
-      "youtubeId": "IjEuruSB4Vk",
       "courseNumber": "AI – The",
       "courseName": "AI – The Verge",
       "department": "General",
@@ -1899,18 +1431,6 @@
     {
       "title": "How to get started with digital art",
       "youtubeId": "cp3Jr6HtQDE",
-      "courseNumber": "Digital Art –",
-      "courseName": "Digital Art – The Verge",
-      "department": "Art & Design",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "Art & Design",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Photoshop for iPad hands-on: an exclusive look",
-      "youtubeId": "Gfq46F-Dg2M",
       "courseNumber": "Digital Art –",
       "courseName": "Digital Art – The Verge",
       "department": "Art & Design",
@@ -2077,54 +1597,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "On The Verge - Matias Duarte - On The Verge, Episode 001",
-      "youtubeId": "5K4HImSqR1k",
-      "courseNumber": "On The Verge:",
-      "courseName": "On The Verge: Season 1",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "On The Verge - John Gruber - On The Verge, Episode 002",
-      "youtubeId": "RZB8TLAFn9Y",
-      "courseNumber": "On The Verge:",
-      "courseName": "On The Verge: Season 1",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "On The Verge - Jimmy Fallon - On The Verge, Episode 003",
-      "youtubeId": "UWPPrJmbpr0",
-      "courseNumber": "On The Verge:",
-      "courseName": "On The Verge: Season 1",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The tech MKBHD is bringing to CES 2019",
-      "youtubeId": "pAmAI3wpK_U",
-      "courseNumber": "CES 2019",
-      "courseName": "CES 2019 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "The LG rollable display is now a real 65-inch TV",
       "youtubeId": "iylZD9RaYek",
       "courseNumber": "CES 2019",
@@ -2209,54 +1681,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Google Pixel 3 and 3 XL hands-on",
-      "youtubeId": "EsNq4nl7-dg",
-      "courseNumber": "Google Pixel 3",
-      "courseName": "Google Pixel 3 Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Pixel Slate: first look at Google's Chrome OS tablet",
-      "youtubeId": "RdYjyj4DBOg",
-      "courseNumber": "Google Pixel 3",
-      "courseName": "Google Pixel 3 Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Google Home Hub hands-on",
-      "youtubeId": "5qL_QfYdc48",
-      "courseNumber": "Google Pixel 3",
-      "courseName": "Google Pixel 3 Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Microsoft Surface Pro 6 and Laptop 2 hands-on",
-      "youtubeId": "oZ4cI0u8lNc",
-      "courseNumber": "Microsoft Surface Ev",
-      "courseName": "Microsoft Surface Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Surface Studio 2 first look",
       "youtubeId": "JueddPSrsDo",
       "courseNumber": "Microsoft Surface Ev",
@@ -2269,44 +1693,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Microsoft Surface Headphones hands-on: noise-cancelling and Cortana",
-      "youtubeId": "bNAOabRe_gU",
-      "courseNumber": "Microsoft Surface Ev",
-      "courseName": "Microsoft Surface Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Apple MacBook Air 2018 review: premium economy",
       "youtubeId": "JtQZQQfJazk",
-      "courseNumber": "Apple Events 2018",
-      "courseName": "Apple Events 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "iPad Pro 2018 hands-on: Apple’s new all-screen tablet",
-      "youtubeId": "Q197NAsuhPI",
-      "courseNumber": "Apple Events 2018",
-      "courseName": "Apple Events 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Apple Macbook Air 2018 hands-on",
-      "youtubeId": "QvVuh7HQ0yw",
       "courseNumber": "Apple Events 2018",
       "courseName": "Apple Events 2018",
       "department": "General",
@@ -2355,18 +1743,6 @@
     {
       "title": "IFA 2018 killed the laptop bezel",
       "youtubeId": "fACiAD55qJc",
-      "courseNumber": "IFA 2018",
-      "courseName": "IFA 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Motorola One hands-on: a budget iPhone X clone",
-      "youtubeId": "Hs3sKe8NqYU",
       "courseNumber": "IFA 2018",
       "courseName": "IFA 2018",
       "department": "General",
@@ -2437,18 +1813,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Samsung Galaxy Watch hands-on",
-      "youtubeId": "bAbTd4k374M",
-      "courseNumber": "Samsung Unpacked Eve",
-      "courseName": "Samsung Unpacked Event 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Samsung Galaxy Note 9 event in 11 minutes",
       "youtubeId": "zm5o8exbQN0",
       "courseNumber": "Samsung Unpacked Eve",
@@ -2461,32 +1825,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Samsung Galaxy Note 9 hands-on",
-      "youtubeId": "IygtUhGmsBc",
-      "courseNumber": "Samsung – The",
-      "courseName": "Samsung – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Samsung Galaxy S9 review",
       "youtubeId": "tbuI7DplL-A",
-      "courseNumber": "Samsung – The",
-      "courseName": "Samsung – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy S9 event in 12 minutes | MWC 2018",
-      "youtubeId": "P-k5X8lCdK0",
       "courseNumber": "Samsung – The",
       "courseName": "Samsung – The Verge",
       "department": "General",
@@ -2761,66 +2101,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Samsung Galaxy S9 hands-on",
-      "youtubeId": "-WRcZ9xHMuE",
-      "courseNumber": "MWC 2018",
-      "courseName": "MWC 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Vivo Apex concept phone hands-on",
-      "youtubeId": "wkndoqWH_FQ",
-      "courseNumber": "MWC 2018",
-      "courseName": "MWC 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Nokia 8110 hands-on: The Matrix phone is back",
-      "youtubeId": "26aMc-bAsa4",
-      "courseNumber": "MWC 2018",
-      "courseName": "MWC 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Best car Infotainment systems | 2018 Detroit Auto Show",
-      "youtubeId": "oBnkPonWv-Q",
-      "courseNumber": "Detroit Auto Show",
-      "courseName": "Detroit Auto Show 2018 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "2018 Detroit Auto Show roundtable",
-      "youtubeId": "D6UNhh3wsBc",
-      "courseNumber": "Detroit Auto Show",
-      "courseName": "Detroit Auto Show 2018 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "2019 Mercedes G-Wagen first look",
       "youtubeId": "aaMzRnCYWLo",
       "courseNumber": "Detroit Auto Show",
@@ -3005,42 +2285,6 @@
       "youtubeId": "FdAMCIEKL10",
       "courseNumber": "Home of the",
       "courseName": "Home of the Future",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Amazon Kindle | Walt Mossberg's gadget museum",
-      "youtubeId": "4FHqCjgrVSA",
-      "courseNumber": "Walt Mossberg's gadg",
-      "courseName": "Walt Mossberg's gadget museum",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "IBM ThinkPad 701 | Walt Mossberg's gadget museum",
-      "youtubeId": "w_fqngEaStM",
-      "courseNumber": "Walt Mossberg's gadg",
-      "courseName": "Walt Mossberg's gadget museum",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The Motorola StarTac | Walt Mossberg's gadget museum",
-      "youtubeId": "8_QxNTJFHO0",
-      "courseNumber": "Walt Mossberg's gadg",
-      "courseName": "Walt Mossberg's gadget museum",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -3289,44 +2533,8 @@
       "sourceId": "stanford"
     },
     {
-      "title": "First look at Google’s new TV streamer and Nest Thermostat",
-      "youtubeId": "Wkl9StYrRRY",
-      "courseNumber": "First Look —",
-      "courseName": "First Look — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Drop-tops from Mazda and Audi won the New York Auto Show",
-      "youtubeId": "z5pGMQQq-p4",
-      "courseNumber": "New York Internation",
-      "courseName": "New York International Auto Show 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "The Prius Prime’s interior is like a low-cost Tesla",
       "youtubeId": "MI7NFQzK-MY",
-      "courseNumber": "New York Internation",
-      "courseName": "New York International Auto Show 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "The Genesis concept is the best-looking surprise of the NY Auto Show",
-      "youtubeId": "8W9a-Q1dk-I",
       "courseNumber": "New York Internation",
       "courseName": "New York International Auto Show 2016 — The Verge",
       "department": "General",
@@ -3397,18 +2605,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Xiaomi Mi 5 preview at MWC 2016",
-      "youtubeId": "IOP5RDkEYcs",
-      "courseNumber": "Mobile World Congres",
-      "courseName": "Mobile World Congress 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Tesla Cybertruck event in 5 minutes",
       "youtubeId": "m7atGkba-Z8",
       "courseNumber": "Rideables — The",
@@ -3445,58 +2641,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "The best and worst cars of the Detroit Auto Show 2016",
-      "youtubeId": "B5oh6zN5UDw",
-      "courseNumber": "Detroit Auto Show",
-      "courseName": "Detroit Auto Show 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Genesis G90: The first car from Hyundai's new luxury brand",
       "youtubeId": "EVSxRKyPjGs",
       "courseNumber": "Detroit Auto Show",
       "courseName": "Detroit Auto Show 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Audi’s amazing robotic moon rover at the Detroit Auto Show",
-      "youtubeId": "dNCYECynTnQ",
-      "courseNumber": "Detroit Auto Show",
-      "courseName": "Detroit Auto Show 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Fiera foreplay gadget simulates oral sex with suction — CES 2016",
-      "youtubeId": "b3Bwj79bZo0",
-      "courseNumber": "Gadgets — The",
-      "courseName": "Gadgets —  The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "LG’s new display rolls up like a newspaper — CES 2016",
-      "youtubeId": "OE3GLUEPoYQ",
-      "courseNumber": "Gadgets — The",
-      "courseName": "Gadgets —  The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -3553,58 +2701,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Samsung Frame Pro hands-on: the perfect TV?",
-      "youtubeId": "qXIlxxrNfWs",
-      "courseNumber": "TVs & Home",
-      "courseName": "TVs & Home Entertainment — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "What happened to all the small TVs?",
       "youtubeId": "gQN6ILTjDz8",
       "courseNumber": "TVs & Home",
       "courseName": "TVs & Home Entertainment — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Bragi's truly wireless earbuds are actually good — CES 2016",
-      "youtubeId": "o-SIreqSrIY",
-      "courseNumber": "CES 2016",
-      "courseName": "CES 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Misfit’s wireless Bluetooth earbuds actually look good — CES 2016",
-      "youtubeId": "3XkTuJoNkLw",
-      "courseNumber": "Audio Gear &",
-      "courseName": "Audio Gear & Headphones — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "This is Sony's new PS-HX500 turntable — CES 2016",
-      "youtubeId": "maA0y7puB5Q",
-      "courseNumber": "Audio Gear &",
-      "courseName": "Audio Gear & Headphones — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -3663,18 +2763,6 @@
     {
       "title": "Microsoft Build event in 15 minutes",
       "youtubeId": "KpxSv3R5c18",
-      "courseNumber": "Microsoft — The",
-      "courseName": "Microsoft — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Surface Pro 12 hands-on: Microsoft's smaller, redesigned tablet",
-      "youtubeId": "5G96qrGabHk",
       "courseNumber": "Microsoft — The",
       "courseName": "Microsoft — The Verge",
       "department": "General",
@@ -3889,30 +2977,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Apple Watch Ultra hands-on",
-      "youtubeId": "O2bZ-dUn6Hw",
-      "courseNumber": "Apple Events —",
-      "courseName": "Apple Events —  The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "First look at the new iPhone 14 Pro: dynamic island?",
-      "youtubeId": "UZWhKe0oT40",
-      "courseNumber": "Apple Events —",
-      "courseName": "Apple Events —  The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "iPhone 14 event in 30 minutes",
       "youtubeId": "J7XUuhQV5vA",
       "courseNumber": "Apple Events —",
@@ -4045,78 +3109,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "2025 Apple Watches hands-on: did the SE 3 steal the show?",
-      "youtubeId": "70VvBWk1Ppc",
-      "courseNumber": "Apple — The",
-      "courseName": "Apple — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "iPhone 17 Pro hands-on",
-      "youtubeId": "jhaMHsmzE9I",
-      "courseNumber": "Apple — The",
-      "courseName": "Apple — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Pixel Watch 4 hands-on: Can Google take the lead in wearables?",
-      "youtubeId": "al0SLxwXepk",
-      "courseNumber": "Wearables — The",
-      "courseName": "Wearables  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Galaxy Watch Ultra hands-on: why the new face?",
-      "youtubeId": "cKLk5-CxPoE",
-      "courseNumber": "Wearables — The",
-      "courseName": "Wearables  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Sony’s best headphones get an upgrade: Sony WH-1000XM6 hands-on",
-      "youtubeId": "Ogz4Naoo1h8",
-      "courseNumber": "Wearables — The",
-      "courseName": "Wearables  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Hands-on with the 'crazy-thin' new Apple Macbook",
-      "youtubeId": "E_U2X1iSN00",
-      "courseNumber": "Apple Spring Forward",
-      "courseName": "Apple Spring Forward event 2015  — The Verge",
-      "department": "History",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "History",
-      "sourceId": "stanford"
-    },
-    {
       "title": "We played with a working Apple Watch",
       "youtubeId": "nb_Pz-doIqA",
       "courseNumber": "Apple Spring Forward",
@@ -4129,82 +3121,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "The Verge Live: Apple Watch and MacBook",
-      "youtubeId": "tuegLg561ak",
-      "courseNumber": "Apple Spring Forward",
-      "courseName": "Apple Spring Forward event 2015  — The Verge",
-      "department": "History",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "History",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Hands-on with the new Valve Steam controller",
-      "youtubeId": "pqXn5DNN21w",
-      "courseNumber": "Game Developers Conf",
-      "courseName": "Game Developers Conference 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Hands-on with Valve and HTC's Vive VR headset",
-      "youtubeId": "n38gC5xgvBg",
-      "courseNumber": "Game Developers Conf",
-      "courseName": "Game Developers Conference 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "The best virtual reality game we played at GDC 2015",
       "youtubeId": "G3bMmVQUNYE",
       "courseNumber": "Game Developers Conf",
       "courseName": "Game Developers Conference 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung Galaxy S6 hands-on from MWC 2015",
-      "youtubeId": "2QJIayQLY7c",
-      "courseNumber": "Mobile World Congres",
-      "courseName": "Mobile World Congress 2015 —  The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "LG Watch Urbane LTE hands-on at MWC 2015",
-      "youtubeId": "lhWIyrz0CWE",
-      "courseNumber": "Mobile World Congres",
-      "courseName": "Mobile World Congress 2015 —  The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Hands-on with the Runcible, a smart pocket watch - MWC 2015",
-      "youtubeId": "IZM0j1wYmH4",
-      "courseNumber": "Mobile World Congres",
-      "courseName": "Mobile World Congress 2015 —  The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -4321,42 +3241,6 @@
       "sourceId": "stanford"
     },
     {
-      "title": "This is the new Sony Walkman — CES 2015",
-      "youtubeId": "JcnGxhILDsM",
-      "courseNumber": "CES 2015",
-      "courseName": "CES 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "You know Xbox, now meet OBox — CES 2015",
-      "youtubeId": "hw_o4ScZbqc",
-      "courseNumber": "CES 2015",
-      "courseName": "CES 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Watch Mercedes-Benz's CES 2015 press conference in 6 minutes — CES 2015",
-      "youtubeId": "AnLqt4jLYdg",
-      "courseNumber": "CES 2015",
-      "courseName": "CES 2015  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Bill Gates interview: How the world will change by 2030",
       "youtubeId": "8RETFyDKcw0",
       "courseNumber": "The Big Future",
@@ -4373,30 +3257,6 @@
       "youtubeId": "ZesA-Iqju4U",
       "courseNumber": "The Big Future",
       "courseName": "The Big Future — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "iPad Air 2 and iPad Mini 3 hands-on",
-      "youtubeId": "38rSZIcpp5Q",
-      "courseNumber": "Apple's iPad Event",
-      "courseName": "Apple's iPad Event  2014  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "iMac Retina hands-on",
-      "youtubeId": "NnQ_KO6cgQM",
-      "courseNumber": "Apple's iPad Event",
-      "courseName": "Apple's iPad Event  2014  — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -4573,46 +3433,10 @@
       "sourceId": "stanford"
     },
     {
-      "title": "Motorola Moto 360 hands-on | Google I/O 2014",
-      "youtubeId": "4TJJnlMDtrI",
-      "courseNumber": "Google I/O 2014",
-      "courseName": "Google I/O 2014 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
       "title": "Google I/O 2014 in under nine minutes",
       "youtubeId": "EgeMgjplANY",
       "courseNumber": "Google I/O 2014",
       "courseName": "Google I/O 2014 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Google's Android TV hands-on | Google I/O 2014",
-      "youtubeId": "jaDVXhqwHcc",
-      "courseNumber": "Google I/O 2014",
-      "courseName": "Google I/O 2014 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Razer Junglecat iOS game controller hands-on",
-      "youtubeId": "qXBVox0X_HA",
-      "courseNumber": "E3 2014 —",
-      "courseName": "E3 2014  — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -4709,42 +3533,6 @@
       "youtubeId": "FnX6N4U9kqo",
       "courseNumber": "Interviews — The",
       "courseName": "Interviews  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Samsung’s Galaxy XR hands-on: A Google-flavored Vision Pro",
-      "youtubeId": "qq7YVwl11vY",
-      "courseNumber": "Hands-on — The",
-      "courseName": "Hands-on — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Meta Ray-Ban Display hands-on: best smart glasses I’ve ever tried",
-      "youtubeId": "5cVGKvl7Oek",
-      "courseNumber": "Hands-on — The",
-      "courseName": "Hands-on — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "stanford"
-    },
-    {
-      "title": "Vergecast Live at On The Verge 2021",
-      "youtubeId": "a3rwdXYFGvM",
-      "courseNumber": "The Vergecast —",
-      "courseName": "The Vergecast — The Verge  (Archive)",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -46609,18 +45397,6 @@
       "sourceId": "numberphile"
     },
     {
-      "title": "Return of the Calculator Unboxing - Numberphile",
-      "youtubeId": "rD6e925w4Ys",
-      "courseNumber": "Matt Parker (standupmaths",
-      "courseName": "Matt Parker (standupmaths) on Numberphile",
-      "department": "Mathematics",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "Mathematics",
-      "sourceId": "numberphile"
-    },
-    {
       "title": "A Magic Square Breakthrough - Numberphile",
       "youtubeId": "stpiBy6gWOA",
       "courseNumber": "Matt Parker (standupmaths",
@@ -46697,30 +45473,6 @@
       "youtubeId": "xOCe5HUObD4",
       "courseNumber": "John Conway on Numberphil",
       "courseName": "John Conway on Numberphile",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "numberphile"
-    },
-    {
-      "title": "Speed Unboxing - Calculator Unboxing #9",
-      "youtubeId": "WN58941sgtI",
-      "courseNumber": "Calculator Unboxings on N",
-      "courseName": "Calculator Unboxings on Numberphile",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "numberphile"
-    },
-    {
-      "title": "Calculator Unboxing #8 (Printing Digits) - Numberphile",
-      "youtubeId": "6_j2X6fgkaA",
-      "courseNumber": "Calculator Unboxings on N",
-      "courseName": "Calculator Unboxings on Numberphile",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -50963,18 +49715,6 @@
       "ocwUrl": "",
       "topicName": "General",
       "sourceId": "fireship"
-    },
-    {
-      "title": "Unboxing the Unitree G1 Edu Humanoid",
-      "youtubeId": "pPTo62O__CU",
-      "courseNumber": "Developing on the Unitree",
-      "courseName": "Developing on the Unitree G1 Humanoid Robot",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "sentdex"
     },
     {
       "title": "Unitree G1 LiDAR, SLAM, navigation and control. Dev w/ G1 Humanoid P.2",
@@ -56545,18 +55285,6 @@
       "sourceId": "nvidia_dev"
     },
     {
-      "title": "Unboxing the NVIDIA DRIVE AGX Thor Developer Kit",
-      "youtubeId": "Tjzuyh1Ra4Q",
-      "courseNumber": "Robotics",
-      "courseName": "Robotics",
-      "department": "Computer Science",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "Computer Science",
-      "sourceId": "nvidia_dev"
-    },
-    {
       "title": "Getting Started with the NVIDIA Jetson AGX Thor Developer Kit for Physical AI",
       "youtubeId": "iYT2haVIgSM",
       "courseNumber": "Robotics",
@@ -61227,18 +59955,6 @@
     {
       "title": "nvim Feature Highlight: 'winbar'",
       "youtubeId": "LKW_SUucO-k",
-      "courseNumber": "Demos",
-      "courseName": "Demos",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "tj_devries"
-    },
-    {
-      "title": "[demo] First look at lsif-python",
-      "youtubeId": "xiu1o0TVqIY",
       "courseNumber": "Demos",
       "courseName": "Demos",
       "department": "General",
@@ -66207,18 +64923,6 @@
     {
       "title": "[Podcast] Fuzzing FFmpeg - Paul Cher",
       "youtubeId": "nKR44fDM_uc",
-      "courseNumber": "Podcast",
-      "courseName": "Podcast",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "ocwUrl": "",
-      "topicName": "General",
-      "sourceId": "live_overflow"
-    },
-    {
-      "title": "First look at a simple PoC crash - Exploiting FFmpeg ft. Paul Cher",
-      "youtubeId": "drPyKgt1MMg",
       "courseNumber": "Podcast",
       "courseName": "Podcast",
       "department": "General",
@@ -85591,14 +84295,6 @@
       "sourceId": "stanford"
     },
     {
-      "courseNumber": "Vergecast Clips -",
-      "title": "Vergecast Clips - The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
       "courseNumber": "CES 2024",
       "title": "CES 2024",
       "department": "General",
@@ -85751,14 +84447,6 @@
       "sourceId": "stanford"
     },
     {
-      "courseNumber": "CES 2020",
-      "title": "CES 2020 – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
       "courseNumber": "Streaming Wars –",
       "title": "Streaming Wars – The Verge",
       "department": "History",
@@ -85786,14 +84474,6 @@
       "courseNumber": "OnePlus – The",
       "title": "OnePlus – The Verge",
       "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "Amazon Hardware Even",
-      "title": "Amazon Hardware Event 2019",
-      "department": "History",
       "semester": "",
       "year": 0,
       "sourceId": "stanford"
@@ -85999,14 +84679,6 @@
       "sourceId": "stanford"
     },
     {
-      "courseNumber": "On The Verge:",
-      "title": "On The Verge: Season 1",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
       "courseNumber": "CES 2019",
       "title": "CES 2019 – The Verge",
       "department": "General",
@@ -86017,14 +84689,6 @@
     {
       "courseNumber": "Tesla – The",
       "title": "Tesla – The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "Google Pixel 3",
-      "title": "Google Pixel 3 Event 2018",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -86119,14 +84783,6 @@
       "sourceId": "stanford"
     },
     {
-      "courseNumber": "MWC 2018",
-      "title": "MWC 2018",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
       "courseNumber": "Detroit Auto Show",
       "title": "Detroit Auto Show 2018 — The Verge",
       "department": "General",
@@ -86161,14 +84817,6 @@
     {
       "courseNumber": "IFA 2017",
       "title": "IFA 2017",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "Walt Mossberg's gadg",
-      "title": "Walt Mossberg's gadget museum",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -86265,22 +84913,6 @@
     {
       "courseNumber": "TVs & Home",
       "title": "TVs & Home Entertainment — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "CES 2016",
-      "title": "CES 2016 — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "Audio Gear &",
-      "title": "Audio Gear & Headphones — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -86399,14 +85031,6 @@
       "sourceId": "stanford"
     },
     {
-      "courseNumber": "Wearables — The",
-      "title": "Wearables  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
       "courseNumber": "Apple Spring Forward",
       "title": "Apple Spring Forward event 2015  — The Verge",
       "department": "History",
@@ -86433,14 +85057,6 @@
     {
       "courseNumber": "Cars — The",
       "title": "Cars — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "CES 2015",
-      "title": "CES 2015  — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -86521,14 +85137,6 @@
     {
       "courseNumber": "Interviews — The",
       "title": "Interviews  — The Verge",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "stanford"
-    },
-    {
-      "courseNumber": "Hands-on — The",
-      "title": "Hands-on — The Verge",
       "department": "General",
       "semester": "",
       "year": 0,
@@ -94897,14 +93505,6 @@
     {
       "courseNumber": "John Conway on Numberphil",
       "title": "John Conway on Numberphile",
-      "department": "General",
-      "semester": "",
-      "year": 0,
-      "sourceId": "numberphile"
-    },
-    {
-      "courseNumber": "Calculator Unboxings on N",
-      "title": "Calculator Unboxings on Numberphile",
       "department": "General",
       "semester": "",
       "year": 0,

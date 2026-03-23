@@ -22,6 +22,7 @@ struct ReelView: View {
     /// Callback when user taps the metadata line to navigate to the parent course.
     var onViewCourse: ((Lecture) -> Void)? = nil
 
+
     @State private var isVideoLoading = true
     @State private var hasVideoError = false
     @State private var currentTime: Double = 0
@@ -128,8 +129,30 @@ struct ReelView: View {
                         .lineLimit(1)
                 }
 
+                Spacer()
+
+                HStack(spacing: 2) {
+                    Button {
+                        FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
+                    } label: {
+                        Image(systemName: "hand.thumbsup")
+                            .font(.caption)
+                            .foregroundStyle(CarbonColor.textTertiary)
+                            .frame(width: 36, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    Button {
+                        FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
+                    } label: {
+                        Image(systemName: "hand.thumbsdown")
+                            .font(.caption)
+                            .foregroundStyle(CarbonColor.textTertiary)
+                            .frame(width: 36, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                }
+
                 if onViewCourse != nil {
-                    Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(CarbonColor.textTertiary)
@@ -163,6 +186,7 @@ struct ReelView: View {
             Spacer(minLength: 0)
         }
         .background(CarbonColor.reelBackground.ignoresSafeArea())
+        .geometryGroup()
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
             if !visible {
@@ -207,13 +231,10 @@ struct ReelView: View {
                     .overlay {
                         if isVisible && isVideoLoading && !hasVideoError {
                             ShimmerView()
-                                .opacity(0.55)
                         }
                     }
 
                 // Only create WKWebView when this reel is visible.
-                // This ensures at most 1 WKWebView exists at a time,
-                // preventing memory accumulation and crashes during scroll.
                 if isVisible {
                     YouTubePlayerView(
                         videoId: lecture.youtubeId,
@@ -227,14 +248,7 @@ struct ReelView: View {
                         seekTo: $seekTarget
                     )
                     .opacity(isVideoLoading && !hasVideoError ? 0 : 1)
-                    .animation(.easeIn(duration: 0.3), value: isVideoLoading)
-                }
-
-                if isVisible && isVideoLoading && !hasVideoError {
-                    ProgressView()
-                        .controlSize(.large)
-                        .tint(.white)
-                        .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.4), value: isVideoLoading)
                 }
 
                 if hasVideoError {
@@ -272,6 +286,7 @@ struct ReelView: View {
                 }
             }
         }
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
     }
 }
 

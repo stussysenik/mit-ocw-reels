@@ -17,53 +17,18 @@ struct DiscoverView: View {
     @State private var hasScrolled = false
     @State private var navigateToCourse: Course?
     @State private var navigateToLectureId: String?
+    @State private var showSourceFilter = false
 
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
-    @State private var enabledSources: Set<String> = SourcePreferences.shared.enabledSourceIds
+    @StateObject private var sourcePrefs = SourcePreferences.shared
+    @StateObject private var feedPrefs = FeedPreferences.shared
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
     var body: some View {
         NavigationStack {
-            Group {
-                if shuffledLectures.isEmpty {
-                    VStack(spacing: Spacing.md) {
-                        ProgressView()
-                            .tint(CarbonColor.interactive)
-                        Text("Loading lectures...")
-                            .font(.subheadline)
-                            .foregroundStyle(CarbonColor.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(CarbonColor.reelBackground)
-                } else {
-                    ScrollView(.vertical) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(shuffledLectures, id: \.youtubeId) { lecture in
-                                ReelView(
-                                    lecture: lecture,
-                                    isVisible: visibleId == lecture.youtubeId,
-                                    autoplayEnabled: autoplayEnabled,
-                                    captionsEnabled: captionsEnabled,
-                                    onViewCourse: { tappedLecture in
-                                        navigateToLectureId = tappedLecture.youtubeId
-                                        navigateToCourse = tappedLecture.course
-                                    }
-                                )
-                                .containerRelativeFrame(.vertical)
-                                .id(lecture.youtubeId)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollPosition(id: $visibleId)
-                    .scrollTargetBehavior(.paging)
-                    .scrollIndicators(.hidden)
-                    .ignoresSafeArea(.container, edges: .vertical)
-                    .background(CarbonColor.reelBackground)
-                }
-            }
+            feedContent
             .navigationBarHidden(true)
             .navigationDestination(isPresented: Binding(
                 get: { navigateToCourse != nil },
@@ -73,59 +38,129 @@ struct DiscoverView: View {
                     CourseReelsView(course: course, initialLectureId: navigateToLectureId)
                 }
             }
+            .sheet(isPresented: $showSourceFilter, onDismiss: rebuildFeed) {
+                sourceFilterSheet
+            }
         }
         .onAppear {
             haptic.prepare()
-            // Refresh enabled sources (user may have changed them in settings)
-            let currentSources = SourcePreferences.shared.enabledSourceIds
-            if currentSources != enabledSources {
-                enabledSources = currentSources
-                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
-            } else if shuffledLectures.isEmpty && !lectures.isEmpty {
-                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
-            }
+            if shuffledLectures.isEmpty && !lectures.isEmpty { rebuildFeed() }
         }
-        .onChange(of: lectures.count) { _, newCount in
-            if newCount > 0 && shuffledLectures.isEmpty {
-                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
-            }
-        }
+        .onChange(of: lectures.count) { _, n in if n > 0 { rebuildFeed() } }
+        .onChange(of: sourcePrefs.enabledSourceIds) { _, _ in rebuildFeed() }
+        .onChange(of: feedPrefs.blockedIds.count) { _, _ in rebuildFeed() }
         .onChange(of: visibleId) { old, _ in
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
+            haptic.impactOccurred()
+            showSourceFilter = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in
+            guard let endedId = note.object as? String, endedId == visibleId,
+                  let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == endedId }),
+                  idx + 1 < shuffledLectures.count else { return }
+            withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            // Flush caches on memory pressure to prevent Jetsam kill
             URLCache.shared.removeAllCachedResponses()
         }
     }
 
+    // MARK: - Feed Content
+
+    @ViewBuilder
+    private var feedContent: some View {
+        if shuffledLectures.isEmpty {
+            VStack(spacing: Spacing.md) {
+                ProgressView()
+                    .tint(CarbonColor.interactive)
+                Text("Loading lectures...")
+                    .font(.subheadline)
+                    .foregroundStyle(CarbonColor.textSecondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(CarbonColor.reelBackground)
+        } else {
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 0) {
+                    ForEach(shuffledLectures, id: \.youtubeId) { lecture in
+                        ReelView(
+                            lecture: lecture,
+                            isVisible: visibleId == lecture.youtubeId,
+                            autoplayEnabled: autoplayEnabled,
+                            captionsEnabled: captionsEnabled,
+                            onViewCourse: { tappedLecture in
+                                navigateToLectureId = tappedLecture.youtubeId
+                                navigateToCourse = tappedLecture.course
+                            }
+                        )
+                        .containerRelativeFrame(.vertical)
+                        .id(lecture.youtubeId)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollPosition(id: $visibleId)
+            .scrollTargetBehavior(.paging)
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea(.container, edges: .vertical)
+            .background(CarbonColor.reelBackground)
+        }
+    }
+
+    // MARK: - Source Filter Sheet
+
+    private var sourceFilterSheet: some View {
+        NavigationStack {
+            List {
+                SourceFilterSection(sourcePrefs: sourcePrefs)
+            }
+            .navigationTitle("Filter Sources")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showSourceFilter = false }
+                        .foregroundStyle(CarbonColor.interactive)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
     // MARK: - Helpers
 
-    /// Max lectures in the doom-scroll feed. Keeps shuffle + ForEach identity tracking under 250ms.
     private static let feedLimit = 200
 
-    /// Filters out invalid lectures: PDFs, empty IDs, orphan records, disabled sources.
-    /// Caps output at `feedLimit` to keep main-thread work under 250ms with 5000+ records.
-    static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>) -> [Lecture] {
-        var result: [Lecture] = []
-        var seen = Set<String>()
-        result.reserveCapacity(feedLimit)
+    private func rebuildFeed() {
+        guard !lectures.isEmpty else { return }
+        shuffledLectures = Self.filterValidLectures(lectures, enabledSources: sourcePrefs.enabledSourceIds, feedPrefs: feedPrefs)
+    }
 
+    /// Weighted course-breadth algorithm. O(n) filter → O(n) group → O(k log k) sort.
+    static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>, feedPrefs: FeedPreferences) -> [Lecture] {
+        let blocked = feedPrefs.blockedIds
+        var valid: [Lecture] = []
+        var seen = Set<String>()
         for lecture in lectures {
-            guard result.count < feedLimit else { break }
             let idLower = lecture.youtubeId.lowercased()
-            guard enabledSources.contains(lecture.sourceId),
+            let titleLower = lecture.title.lowercased()
+            guard !blocked.contains(lecture.youtubeId),
+                  enabledSources.contains(lecture.sourceId),
                   !lecture.youtubeId.isEmpty,
                   !lecture.courseNumber.isEmpty,
-                  !lecture.title.lowercased().hasSuffix(".pdf"),
-                  !lecture.title.lowercased().contains("3play"),
-                  !lecture.title.lowercased().contains("caption file"),
+                  !titleLower.hasSuffix(".pdf"),
+                  !titleLower.contains("3play"),
+                  !titleLower.contains("caption file"),
                   seen.insert(idLower).inserted else { continue }
-            result.append(lecture)
+            valid.append(lecture)
         }
-        return result
+        let byCourse = Dictionary(grouping: valid) { "\($0.sourceId)_\($0.courseNumber)" }
+        let sampled = byCourse.values.compactMap { $0.randomElement() }
+        let scored = sampled.map { ($0, Double.random(in: 0...1) / feedPrefs.weight(for: $0.sourceId, topic: $0.department)) }
+        return Array(scored.sorted { $0.1 < $1.1 }.prefix(feedLimit).map(\.0))
     }
 }
 

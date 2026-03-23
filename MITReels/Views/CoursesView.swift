@@ -17,8 +17,10 @@ struct CoursesView: View {
     @State private var cachedSourceData: [(source: UniversitySource, courses: [Course], lectureCount: Int, departments: [String])] = []
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
+    @AppStorage("hdOnWifi") private var hdOnWifi = true
     @AppStorage("courseViewMode") private var courseViewMode = "list"
     @StateObject private var sourcePrefs = SourcePreferences.shared
+    @StateObject private var feedPrefs = FeedPreferences.shared
 
     private func recomputeSchoolData() {
         // MIT courses only — filtered to sourceId == "mit"
@@ -141,7 +143,9 @@ struct CoursesView: View {
                     .accessibilityIdentifier("settingsButton")
                 }
             }
-            .sheet(isPresented: $showSettings) {
+            .sheet(isPresented: $showSettings, onDismiss: {
+                recomputeSourceData()
+            }) {
                 settingsSheet
             }
             .onAppear { recomputeSchoolData() }
@@ -189,53 +193,27 @@ struct CoursesView: View {
                     }
                     .tint(CarbonColor.interactive)
                     .accessibilityIdentifier("captionsToggle")
-                } header: {
-                    Text("Playback")
-                        .font(.caption2)
-                        .foregroundStyle(CarbonColor.textLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
-                }
 
-                Section {
-                    // MIT — always on
-                    HStack(spacing: Spacing.sm) {
-                        Circle()
-                            .fill(UniversitySource.mit.brandColor)
-                            .frame(width: 8, height: 8)
-                        Text("MIT OpenCourseWare")
-                            .font(.body)
-                            .foregroundStyle(CarbonColor.textPrimary)
-                        Spacer()
-                        Text("Always On")
-                            .font(.caption)
-                            .foregroundStyle(CarbonColor.textPlaceholder)
-                    }
-
-                    // Toggleable sources
-                    ForEach(sourcePrefs.toggleableSources) { source in
-                        Toggle(isOn: Binding(
-                            get: { sourcePrefs.isEnabled(source) },
-                            set: { sourcePrefs.setEnabled(source, $0) }
-                        )) {
-                            HStack(spacing: Spacing.sm) {
-                                Circle()
-                                    .fill(source.brandColor)
-                                    .frame(width: 8, height: 8)
-                                Text(source.displayName)
+                    Toggle(isOn: $hdOnWifi) {
+                        HStack(spacing: Spacing.sm) {
+                            Image(systemName: "wifi")
+                                .foregroundStyle(CarbonColor.interactive)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("HD on WiFi")
                                     .font(.body)
                                     .foregroundStyle(CarbonColor.textPrimary)
+                                Text("Highest quality on WiFi, lower on cellular")
+                                    .font(.caption)
+                                    .foregroundStyle(CarbonColor.textSecondary)
                             }
                         }
-                        .tint(CarbonColor.interactive)
                     }
+                    .tint(CarbonColor.interactive)
                 } header: {
-                    Text("Lecture Sources")
-                        .font(.caption2)
-                        .foregroundStyle(CarbonColor.textLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                    Text("Playback").sectionHeader()
                 }
+
+                SourceFilterSection(sourcePrefs: sourcePrefs)
 
                 Section {
                     Picker("Default View", selection: $courseViewMode) {
@@ -244,12 +222,10 @@ struct CoursesView: View {
                     }
                     .pickerStyle(.segmented)
                 } header: {
-                    Text("Course Browser")
-                        .font(.caption2)
-                        .foregroundStyle(CarbonColor.textLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                    Text("Course Browser").sectionHeader()
                 }
+
+                algorithmSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -261,6 +237,46 @@ struct CoursesView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    @ViewBuilder
+    private var algorithmSection: some View {
+        let srcWeights = feedPrefs.adjustedSourceWeights
+        let topicWeights = feedPrefs.adjustedTopicWeights
+
+        if !srcWeights.isEmpty || !topicWeights.isEmpty {
+            Section {
+                ForEach(srcWeights, id: \.id) { item in
+                    HStack {
+                        if let src = UniversitySource(rawValue: item.id) {
+                            Circle().fill(src.brandColor).frame(width: 8, height: 8)
+                            Text(src.shortName).font(.body).foregroundStyle(CarbonColor.textPrimary)
+                        } else {
+                            Text(item.id).font(.body).foregroundStyle(CarbonColor.textPrimary)
+                        }
+                        Spacer()
+                        Text(String(format: "%.1fx", item.weight))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(item.weight > 1.0 ? .green : .red)
+                    }
+                }
+                ForEach(topicWeights, id: \.id) { item in
+                    HStack {
+                        Image(systemName: "tag").foregroundStyle(CarbonColor.textSecondary)
+                        Text(item.id).font(.body).foregroundStyle(CarbonColor.textPrimary)
+                        Spacer()
+                        Text(String(format: "%.1fx", item.weight))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(item.weight > 1.0 ? .green : .red)
+                    }
+                }
+                Button("Reset to Defaults", role: .destructive) {
+                    feedPrefs.resetToDefaults()
+                }
+            } header: {
+                Text("Feed Algorithm").sectionHeader()
+            }
+        }
     }
 }
 

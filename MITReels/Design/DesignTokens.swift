@@ -98,3 +98,14 @@ extension MITSchool {
         }
     }
 }
+
+// MARK: - Section Header Style
+
+extension Text {
+    func sectionHeader() -> some View {
+        self.font(.caption2)
+            .foregroundStyle(CarbonColor.textLabel)
+            .textCase(.uppercase)
+            .tracking(1)
+    }
+}

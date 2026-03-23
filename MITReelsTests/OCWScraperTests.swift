@@ -35,7 +35,7 @@ struct OCWScraperTests {
         context.insert(validLecture)
 
         let all = [pdfLecture, validLecture]
-        let filtered = DiscoverView.filterValidLectures(all, enabledSources: ["mit"])
+        let filtered = DiscoverView.filterValidLectures(all, enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
 
         #expect(filtered.count == 1)
         #expect(filtered.first?.title == "Introduction to Algorithms")
@@ -54,7 +54,7 @@ struct OCWScraperTests {
         )
         context.insert(emptyIdLecture)
 
-        let filtered = DiscoverView.filterValidLectures([emptyIdLecture], enabledSources: ["mit"])
+        let filtered = DiscoverView.filterValidLectures([emptyIdLecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
         #expect(filtered.isEmpty)
     }
 
@@ -71,7 +71,7 @@ struct OCWScraperTests {
         )
         context.insert(orphanLecture)
 
-        let filtered = DiscoverView.filterValidLectures([orphanLecture], enabledSources: ["mit"])
+        let filtered = DiscoverView.filterValidLectures([orphanLecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
         #expect(filtered.isEmpty)
     }
 
@@ -88,7 +88,7 @@ struct OCWScraperTests {
         )
         context.insert(lecture)
 
-        let filtered = DiscoverView.filterValidLectures([lecture], enabledSources: ["mit"])
+        let filtered = DiscoverView.filterValidLectures([lecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
         #expect(filtered.count == 1)
     }
 
