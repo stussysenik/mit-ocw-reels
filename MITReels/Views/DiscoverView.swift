@@ -90,6 +90,12 @@ struct DiscoverView: View {
                   idx + 1 < shuffledLectures.count else { return }
             withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
         }
+        .onReceive(NotificationCenter.default.publisher(for: ReelView.dislikeAdvanceNotification)) { note in
+            guard let dislikedId = note.object as? String, dislikedId == visibleId,
+                  let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
+                  idx + 1 < shuffledLectures.count else { return }
+            withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
             URLCache.shared.removeAllCachedResponses()
             WKWebViewPool.shared.handleMemoryWarning()

@@ -13,12 +13,11 @@ final class SourcePreferences: ObservableObject {
     private let key = "enabledSourceIds"
 
     /// The set of enabled source IDs. Always includes "mit".
-    /// Default: all sources enabled so users see content immediately.
+    /// Default: MIT only — extra sources must be explicitly enabled by the user.
     var enabledSourceIds: Set<String> {
         get {
             if UserDefaults.standard.object(forKey: key) == nil {
-                // First launch: enable all sources by default
-                return Set(UniversitySource.allCases.map(\.rawValue))
+                return ["mit"]
             }
             let raw = UserDefaults.standard.string(forKey: key) ?? "mit"
             var ids = Set(raw.split(separator: ",").map { String($0) })

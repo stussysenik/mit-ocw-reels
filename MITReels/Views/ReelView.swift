@@ -5,6 +5,9 @@ import SwiftUI
 /// Minimal layout: course number + title above the video, single metadata
 /// line below with OCW links. White background, no decorative elements.
 struct ReelView: View {
+    /// Posted after dislike animation — parent should advance to next reel.
+    static let dislikeAdvanceNotification = Notification.Name("reelDislikeAdvance")
+
     let lecture: Lecture
 
     /// Optional 0-based index; when set, shows "LECTURE N" instead of course number.
@@ -134,6 +137,10 @@ struct ReelView: View {
                             showToast("Less like this")
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 self.haptic.impactOccurred()
+                            }
+                            // Advance to next reel after animation plays
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                NotificationCenter.default.post(name: ReelView.dislikeAdvanceNotification, object: lecture.youtubeId)
                             }
                         }
                     }
