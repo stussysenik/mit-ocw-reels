@@ -13,6 +13,9 @@ struct ReelView: View {
     /// Driven by the parent's scroll-position tracker. Controls auto-play/pause.
     var isVisible: Bool = false
 
+    /// When true, preloads the video player (hidden) so it's ready when scrolled to.
+    var isNext: Bool = false
+
     /// When false, videos won't auto-play on scroll — user must tap play manually.
     var autoplayEnabled: Bool = true
 
@@ -41,11 +44,13 @@ struct ReelView: View {
         lecture: Lecture,
         lectureIndex: Int? = nil,
         isVisible: Bool = false,
+        isNext: Bool = false,
         autoplayEnabled: Bool = true,
         captionsEnabled: Bool = true,
         onViewCourse: ((Lecture) -> Void)? = nil
     ) {
         self.lecture = lecture
+        self.isNext = isNext
         self.lectureIndex = lectureIndex
         self.isVisible = isVisible
         self.autoplayEnabled = autoplayEnabled
@@ -189,7 +194,7 @@ struct ReelView: View {
         .geometryGroup()
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
-            if !visible {
+            if !visible && !isNext {
                 isVideoLoading = true
                 hasVideoError = false
                 currentTime = 0
@@ -234,11 +239,11 @@ struct ReelView: View {
                         }
                     }
 
-                // Only create WKWebView when this reel is visible.
-                if isVisible {
+                // Preload: create WKWebView when visible OR next (TikTok-style preloading)
+                if isVisible || isNext {
                     YouTubePlayerView(
                         videoId: lecture.youtubeId,
-                        autoplay: autoplayEnabled,
+                        autoplay: isVisible && autoplayEnabled,
                         captionsEnabled: captionsEnabled,
                         isLoading: $isVideoLoading,
                         hasError: $hasVideoError,
@@ -247,7 +252,7 @@ struct ReelView: View {
                         isPlaying: $isPlaying,
                         seekTo: $seekTarget
                     )
-                    .opacity(isVideoLoading && !hasVideoError ? 0 : 1)
+                    .opacity(isVisible && !(isVideoLoading && !hasVideoError) ? 1 : 0)
                     .animation(.easeInOut(duration: 0.4), value: isVideoLoading)
                 }
 

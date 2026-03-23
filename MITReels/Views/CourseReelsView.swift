@@ -27,6 +27,12 @@ struct CourseReelsView: View {
                 )
             } else {
                 ScrollView(.vertical) {
+                    let nextId: String? = {
+                        guard let vid = visibleId,
+                              let idx = cachedLectures.firstIndex(where: { $0.youtubeId == vid }),
+                              idx + 1 < cachedLectures.count else { return nil }
+                        return cachedLectures[idx + 1].youtubeId
+                    }()
                     LazyVStack(spacing: 0) {
                         ForEach(
                             Array(cachedLectures.enumerated()),
@@ -36,6 +42,7 @@ struct CourseReelsView: View {
                                 lecture: lecture,
                                 lectureIndex: index,
                                 isVisible: visibleId == lecture.youtubeId,
+                                isNext: lecture.youtubeId == nextId,
                                 autoplayEnabled: autoplayEnabled,
                                 captionsEnabled: captionsEnabled
                             )

@@ -85,11 +85,18 @@ struct DiscoverView: View {
             .background(CarbonColor.reelBackground)
         } else {
             ScrollView(.vertical) {
+                let nextId: String? = {
+                    guard let vid = visibleId,
+                          let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == vid }),
+                          idx + 1 < shuffledLectures.count else { return nil }
+                    return shuffledLectures[idx + 1].youtubeId
+                }()
                 LazyVStack(spacing: 0) {
                     ForEach(shuffledLectures, id: \.youtubeId) { lecture in
                         ReelView(
                             lecture: lecture,
                             isVisible: visibleId == lecture.youtubeId,
+                            isNext: lecture.youtubeId == nextId,
                             autoplayEnabled: autoplayEnabled,
                             captionsEnabled: captionsEnabled,
                             onViewCourse: { tappedLecture in
