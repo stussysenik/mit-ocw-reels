@@ -28,6 +28,8 @@ struct ReelView: View {
 
     @State private var isVideoLoading = true
     @State private var hasVideoError = false
+    @State private var showLiked = false
+    @State private var showDisliked = false
     @State private var currentTime: Double = 0
     @State private var duration: Double = 0
     @State private var isPlaying = false
@@ -136,23 +138,32 @@ struct ReelView: View {
 
                 Spacer()
 
-                HStack(spacing: 2) {
+                HStack(spacing: Spacing.sm) {
                     Button {
+                        let g = UIImpactFeedbackGenerator(style: .light)
+                        g.impactOccurred()
                         FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
+                        withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            withAnimation { showLiked = false }
+                        }
                     } label: {
-                        Image(systemName: "hand.thumbsup")
-                            .font(.caption)
-                            .foregroundStyle(CarbonColor.textTertiary)
-                            .frame(width: 36, height: 28)
+                        Image(systemName: showLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
+                            .font(.subheadline)
+                            .foregroundStyle(showLiked ? .green : CarbonColor.textTertiary)
+                            .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
                     Button {
+                        let g = UIImpactFeedbackGenerator(style: .medium)
+                        g.impactOccurred()
                         FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
+                        withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
                     } label: {
-                        Image(systemName: "hand.thumbsdown")
-                            .font(.caption)
-                            .foregroundStyle(CarbonColor.textTertiary)
-                            .frame(width: 36, height: 28)
+                        Image(systemName: showDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                            .font(.subheadline)
+                            .foregroundStyle(showDisliked ? CarbonColor.interactive : CarbonColor.textTertiary)
+                            .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
                 }
