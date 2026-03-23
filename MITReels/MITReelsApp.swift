@@ -19,7 +19,8 @@ struct MITReelsApp: App {
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
             MITReelsApp.seedDataIfNeeded(context: container.mainContext)
-            MITReelsApp.seedMultiSourceIfNeeded(context: container.mainContext)
+            // Multi-source seed runs async — 5000+ records would block main thread
+            MITReelsApp.startMultiSourceSeed(container: container)
             MITReelsApp.startBackgroundValidation(container: container)
             MITReelsApp.startBackgroundScrape(container: container)
             MITReelsApp.startYouTubeFetch(container: container)
@@ -244,82 +245,86 @@ struct MITReelsApp: App {
         print("Seeded \(seed.lectures.count) lectures across \(seed.courses.count) courses")
     }
 
-    // MARK: - Multi-Source Seed Data Loader
+    // MARK: - Multi-Source Seed Data Loader (Async)
 
-    /// Seeds non-MIT lecture sources from multi_source_seed.json.
-    /// Guarded by "multiSourceSeeded_v4" UserDefaults flag — runs once per install.
-    @MainActor
-    private static func seedMultiSourceIfNeeded(context: ModelContext) {
+    /// Seeds non-MIT lecture sources from multi_source_seed.json in a background task.
+    /// Batches inserts in chunks of 200 to avoid blocking main thread with 5000+ records.
+    private static func startMultiSourceSeed(container: ModelContainer) {
         guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v4") else { return }
 
-        guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            print("multi_source_seed.json not found in bundle")
-            return
-        }
-
-        guard let seed = try? JSONDecoder().decode(MultiSourceSeedData.self, from: data) else {
-            print("Failed to decode multi_source_seed.json")
-            return
-        }
-
-        var courseMap: [String: Course] = [:]
-        // Fetch existing courses to avoid duplicates
-        let courseDescriptor = FetchDescriptor<Course>()
-        let existingCourses = (try? context.fetch(courseDescriptor)) ?? []
-        for course in existingCourses {
-            courseMap["\(course.sourceId)_\(course.courseNumber)"] = course
-        }
-
-        for seedCourse in seed.courses {
-            let key = "\(seedCourse.sourceId)_\(seedCourse.courseNumber)"
-            guard courseMap[key] == nil else { continue }
-            let course = Course(
-                courseNumber: seedCourse.courseNumber,
-                title: seedCourse.title,
-                department: seedCourse.department,
-                semester: seedCourse.semester,
-                year: seedCourse.year
-            )
-            course.sourceId = seedCourse.sourceId
-            context.insert(course)
-            courseMap[key] = course
-        }
-
-        // Dedup against existing lectures
-        let lectureDescriptor = FetchDescriptor<Lecture>()
-        let existingLectures = (try? context.fetch(lectureDescriptor)) ?? []
-        let existingIds = Set(existingLectures.map { $0.youtubeId.lowercased() })
-
-        var inserted = 0
-        for seedLecture in seed.lectures {
-            guard !existingIds.contains(seedLecture.youtubeId.lowercased()) else { continue }
-            let lecture = Lecture(
-                title: seedLecture.title,
-                youtubeId: seedLecture.youtubeId,
-                courseNumber: seedLecture.courseNumber,
-                courseName: seedLecture.courseName,
-                department: seedLecture.department,
-                semester: seedLecture.semester,
-                year: seedLecture.year,
-                ocwUrl: seedLecture.ocwUrl,
-                topicName: seedLecture.topicName
-            )
-            lecture.sourceId = seedLecture.sourceId
-            context.insert(lecture)
-
-            let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
-            if let course = courseMap[key] {
-                lecture.course = course
+        Task.detached(priority: .utility) {
+            guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
+                  let data = try? Data(contentsOf: url),
+                  let seed = try? JSONDecoder().decode(MultiSourceSeedData.self, from: data) else {
+                print("multi_source_seed.json not found or failed to decode")
+                return
             }
-            inserted += 1
-        }
 
-        if inserted > 0 {
-            try? context.save()
+            // Insert in batches on MainActor to avoid blocking UI
+            let batchSize = 200
+            await MainActor.run {
+                let courseDescriptor = FetchDescriptor<Course>()
+                let existingCourses = (try? container.mainContext.fetch(courseDescriptor)) ?? []
+                var courseMap: [String: Course] = [:]
+                for course in existingCourses {
+                    courseMap["\(course.sourceId)_\(course.courseNumber)"] = course
+                }
+
+                for seedCourse in seed.courses {
+                    let key = "\(seedCourse.sourceId)_\(seedCourse.courseNumber)"
+                    guard courseMap[key] == nil else { continue }
+                    let course = Course(
+                        courseNumber: seedCourse.courseNumber,
+                        title: seedCourse.title,
+                        department: seedCourse.department,
+                        semester: seedCourse.semester,
+                        year: seedCourse.year
+                    )
+                    course.sourceId = seedCourse.sourceId
+                    container.mainContext.insert(course)
+                    courseMap[key] = course
+                }
+
+                let lectureDescriptor = FetchDescriptor<Lecture>()
+                let existingLectures = (try? container.mainContext.fetch(lectureDescriptor)) ?? []
+                let existingIds = Set(existingLectures.map { $0.youtubeId.lowercased() })
+
+                var inserted = 0
+                for (index, seedLecture) in seed.lectures.enumerated() {
+                    guard !existingIds.contains(seedLecture.youtubeId.lowercased()) else { continue }
+                    let lecture = Lecture(
+                        title: seedLecture.title,
+                        youtubeId: seedLecture.youtubeId,
+                        courseNumber: seedLecture.courseNumber,
+                        courseName: seedLecture.courseName,
+                        department: seedLecture.department,
+                        semester: seedLecture.semester,
+                        year: seedLecture.year,
+                        ocwUrl: seedLecture.ocwUrl,
+                        topicName: seedLecture.topicName
+                    )
+                    lecture.sourceId = seedLecture.sourceId
+                    container.mainContext.insert(lecture)
+
+                    let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
+                    if let course = courseMap[key] {
+                        lecture.course = course
+                    }
+                    inserted += 1
+
+                    // Save in batches to yield main thread
+                    if inserted % batchSize == 0 {
+                        try? container.mainContext.save()
+                    }
+                }
+
+                if inserted > 0 {
+                    try? container.mainContext.save()
+                }
+                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v4")
+                print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
+            }
         }
-        UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v4")
-        print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
     }
 
     // MARK: - YouTube Fetch Pipeline
