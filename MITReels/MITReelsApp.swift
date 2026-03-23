@@ -247,10 +247,10 @@ struct MITReelsApp: App {
     // MARK: - Multi-Source Seed Data Loader
 
     /// Seeds non-MIT lecture sources from multi_source_seed.json.
-    /// Guarded by "multiSourceSeeded_v3" UserDefaults flag — runs once per install.
+    /// Guarded by "multiSourceSeeded_v4" UserDefaults flag — runs once per install.
     @MainActor
     private static func seedMultiSourceIfNeeded(context: ModelContext) {
-        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v3") else { return }
+        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v4") else { return }
 
         guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
               let data = try? Data(contentsOf: url) else {
@@ -318,7 +318,7 @@ struct MITReelsApp: App {
         if inserted > 0 {
             try? context.save()
         }
-        UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v3")
+        UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v4")
         print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
     }
 
