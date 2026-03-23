@@ -71,6 +71,31 @@ struct PreviewSampleData {
         container.mainContext.insert(lecture3)
         lecture3.course = course2
 
+        // --- Course 3: Stanford CS229 (multi-source) ---
+        let stanfordCourse = Course(
+            courseNumber: "CS229",
+            title: "Machine Learning",
+            department: "Computer Science",
+            semester: "",
+            year: 2018
+        )
+        stanfordCourse.sourceId = "stanford"
+        container.mainContext.insert(stanfordCourse)
+
+        let stanfordLecture = Lecture(
+            title: "Stanford CS229: Machine Learning - Lecture 1",
+            youtubeId: "jGwO_UgTS7I",
+            courseNumber: "CS229",
+            courseName: "Machine Learning",
+            department: "Computer Science",
+            semester: "",
+            year: 2018,
+            topicName: "Machine Learning"
+        )
+        stanfordLecture.sourceId = "stanford"
+        container.mainContext.insert(stanfordLecture)
+        stanfordLecture.course = stanfordCourse
+
         return container
     }()
 

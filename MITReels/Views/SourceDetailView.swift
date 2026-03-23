@@ -1,26 +1,19 @@
 import SwiftUI
 
-/// Per-school course browser with list/grid toggle, search, and department filter.
+/// Per-source course browser — same pattern as SchoolDetailView but for non-MIT sources.
 ///
-/// Navigated to from CoursesView's School Hub when user taps a school card.
-/// Courses are grouped by department within the school. Users can:
-/// - Switch between list and grid views via toolbar picker
-/// - Filter by department via tappable section headers (list) or pill bar (grid)
-/// - Search across title, courseNumber, department
-struct SchoolDetailView: View {
-    let school: MITSchool
+/// Shows courses from a single university source, grouped by department.
+/// Supports list/grid toggle, search, and department filtering.
+struct SourceDetailView: View {
+    let source: UniversitySource
     let courses: [Course]
 
     @State private var searchText = ""
     @State private var selectedDepartment: String? = nil
     @AppStorage("courseViewMode") private var viewMode = "list"
 
-    // MARK: - Cached Computed Data (O(1) per render)
-
     @State private var cachedGroups: [(department: String, courses: [Course])] = []
     @State private var cachedDepartments: [String] = []
-
-    /// O(1) per render — updated in recomputeGroups() and toggleDepartment().
     @State private var cachedDisplayedCourses: [Course] = []
 
     var body: some View {
@@ -31,8 +24,8 @@ struct SchoolDetailView: View {
                 listView
             }
         }
-        .navigationTitle(school.shortName)
-        .searchable(text: $searchText, prompt: "Search \(school.shortName)...")
+        .navigationTitle(source.shortName)
+        .searchable(text: $searchText, prompt: "Search \(source.shortName)...")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Picker("View", selection: $viewMode) {
@@ -47,7 +40,7 @@ struct SchoolDetailView: View {
         .onChange(of: searchText) { _, _ in recomputeGroups() }
     }
 
-    // MARK: - Data Computation
+    // MARK: - Data
 
     private func recomputeGroups() {
         let sorted = courses.sorted { $0.courseNumber < $1.courseNumber }
@@ -62,20 +55,25 @@ struct SchoolDetailView: View {
             }
         }
 
-        // Filter out courses with empty department names
         let withDept = filtered.filter { !$0.department.isEmpty }
+        let noDept = filtered.filter { $0.department.isEmpty }
 
         let byDept = Dictionary(grouping: withDept, by: \.department)
-        cachedGroups = byDept
+        var groups = byDept
             .sorted { $0.key < $1.key }
             .map { (department: $0.key, courses: $0.value) }
-        cachedDepartments = cachedGroups.map(\.department)
 
-        // Clear department filter if it no longer exists in filtered results
+        // Put courses without department in a "General" group
+        if !noDept.isEmpty {
+            groups.append((department: "General", courses: noDept))
+        }
+
+        cachedGroups = groups
+        cachedDepartments = groups.map(\.department)
+
         if let sel = selectedDepartment, !cachedDepartments.contains(sel) {
             selectedDepartment = nil
         }
-
         updateDisplayedCourses()
     }
 
@@ -114,16 +112,13 @@ struct SchoolDetailView: View {
                         HStack {
                             Text(dept.department)
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(school.color)
-
+                                .foregroundStyle(source.brandColor)
                             Spacer()
-
                             if selectedDepartment == dept.department {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.caption2)
                                     .foregroundStyle(CarbonColor.textPlaceholder)
                             }
-
                             Text("\(dept.courses.count)")
                                 .font(.caption2.weight(.medium).monospacedDigit())
                                 .foregroundStyle(CarbonColor.textPlaceholder)
@@ -142,7 +137,6 @@ struct SchoolDetailView: View {
     private var gridView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Department filter pills
                 if cachedDepartments.count > 1 {
                     departmentFilterBar
                         .padding(.horizontal, Spacing.md)
@@ -155,7 +149,7 @@ struct SchoolDetailView: View {
                 ], spacing: Spacing.sm) {
                     ForEach(cachedDisplayedCourses, id: \.courseNumber) { course in
                         NavigationLink(destination: CourseReelsView(course: course)) {
-                            CourseGridItemView(course: course, accentColor: school.color)
+                            CourseGridItemView(course: course, accentColor: source.brandColor)
                         }
                         .buttonStyle(.plain)
                     }
@@ -180,7 +174,7 @@ struct SchoolDetailView: View {
                             .padding(.vertical, 5)
                             .background(
                                 isSelected
-                                    ? AnyShapeStyle(school.color)
+                                    ? AnyShapeStyle(source.brandColor)
                                     : AnyShapeStyle(CarbonColor.layerHover)
                             )
                             .clipShape(Capsule())
@@ -196,7 +190,7 @@ struct SchoolDetailView: View {
     private func courseRow(_ course: Course) -> some View {
         HStack(spacing: 0) {
             Rectangle()
-                .fill(school.color)
+                .fill(source.brandColor)
                 .frame(width: 3)
                 .clipShape(RoundedRectangle(cornerRadius: 1.5))
 
@@ -225,12 +219,6 @@ struct SchoolDetailView: View {
                             .font(.caption2)
                             .foregroundStyle(CarbonColor.textPlaceholder)
                     }
-
-                    Text("\u{00B7}")
-                        .foregroundStyle(CarbonColor.textTertiary)
-                    Text(CourseLevel.from(courseNumber: course.courseNumber).rawValue)
-                        .font(.caption2)
-                        .foregroundStyle(CarbonColor.textPlaceholder)
                 }
             }
             .padding(.leading, Spacing.sm)

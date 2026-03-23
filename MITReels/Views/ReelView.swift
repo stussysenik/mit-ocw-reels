@@ -29,8 +29,10 @@ struct ReelView: View {
     @State private var isPlaying = false
     @State private var seekTarget: Double? = nil
 
-    /// Pre-computed school — immutable for this view's lifetime.
-    private let school: MITSchool
+    /// Pre-computed source label — "Engineering" for MIT, "Stanford" for Stanford, etc.
+    private let sourceName: String
+    /// Pre-computed accent color — school color for MIT, brand color for others.
+    private let accentColor: Color
     /// Pre-computed display label — immutable for this view's lifetime.
     private let displayLabel: String
 
@@ -49,7 +51,16 @@ struct ReelView: View {
         self.captionsEnabled = captionsEnabled
         self.onViewCourse = onViewCourse
 
-        self.school = MITSchool.from(courseNumber: lecture.courseNumber)
+        // Source-aware metadata: MIT uses school mapping, others use source branding
+        if lecture.source == .mit {
+            let school = MITSchool.from(courseNumber: lecture.courseNumber)
+            self.sourceName = school.shortName
+            self.accentColor = school.color
+        } else {
+            self.sourceName = lecture.source.shortName
+            self.accentColor = lecture.source.brandColor
+        }
+
         if let index = lectureIndex {
             self.displayLabel = "LECTURE \(index + 1)"
         } else {
@@ -86,9 +97,9 @@ struct ReelView: View {
 
             // Metadata line — tappable to navigate to course when onViewCourse is set
             HStack(spacing: 6) {
-                Text(school.shortName)
+                Text(sourceName)
                     .font(Typography.reelMeta)
-                    .foregroundStyle(school.color)
+                    .foregroundStyle(accentColor)
 
                 Text("\u{00B7}")
                     .foregroundStyle(CarbonColor.textTertiary)

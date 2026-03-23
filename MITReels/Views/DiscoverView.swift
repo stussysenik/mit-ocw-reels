@@ -20,6 +20,7 @@ struct DiscoverView: View {
 
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
+    @State private var enabledSources: Set<String> = SourcePreferences.shared.enabledSourceIds
 
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
 
@@ -75,13 +76,18 @@ struct DiscoverView: View {
         }
         .onAppear {
             haptic.prepare()
-            if shuffledLectures.isEmpty && !lectures.isEmpty {
-                shuffledLectures = Self.filterValidLectures(lectures).shuffled()
+            // Refresh enabled sources (user may have changed them in settings)
+            let currentSources = SourcePreferences.shared.enabledSourceIds
+            if currentSources != enabledSources {
+                enabledSources = currentSources
+                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
+            } else if shuffledLectures.isEmpty && !lectures.isEmpty {
+                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
             }
         }
         .onChange(of: lectures.count) { _, newCount in
             if newCount > 0 && shuffledLectures.isEmpty {
-                shuffledLectures = Self.filterValidLectures(lectures).shuffled()
+                shuffledLectures = Self.filterValidLectures(lectures, enabledSources: enabledSources).shuffled()
             }
         }
         .onChange(of: visibleId) { old, _ in
@@ -97,12 +103,13 @@ struct DiscoverView: View {
 
     // MARK: - Helpers
 
-    /// Filters out invalid lectures: PDFs, empty IDs, orphan records.
+    /// Filters out invalid lectures: PDFs, empty IDs, orphan records, disabled sources.
     /// Note: Does NOT filter by thumbnail quality — thumbnails are cosmetic.
     /// The video player has its own error state for truly unavailable videos.
-    static func filterValidLectures(_ lectures: [Lecture]) -> [Lecture] {
+    static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>) -> [Lecture] {
         lectures.filter { lecture in
-            !lecture.youtubeId.isEmpty
+            enabledSources.contains(lecture.sourceId)
+            && !lecture.youtubeId.isEmpty
             && !lecture.courseNumber.isEmpty
             && !lecture.title.lowercased().hasSuffix(".pdf")
             && !lecture.title.lowercased().contains("3play")

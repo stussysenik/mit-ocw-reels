@@ -19,8 +19,10 @@ struct MITReelsApp: App {
         do {
             container = try ModelContainer(for: Course.self, Lecture.self)
             MITReelsApp.seedDataIfNeeded(context: container.mainContext)
+            MITReelsApp.seedMultiSourceIfNeeded(context: container.mainContext)
             MITReelsApp.startBackgroundValidation(container: container)
             MITReelsApp.startBackgroundScrape(container: container)
+            MITReelsApp.startYouTubeFetch(container: container)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
@@ -241,6 +243,193 @@ struct MITReelsApp: App {
         try? context.save()
         print("Seeded \(seed.lectures.count) lectures across \(seed.courses.count) courses")
     }
+
+    // MARK: - Multi-Source Seed Data Loader
+
+    /// Seeds non-MIT lecture sources from multi_source_seed.json.
+    /// Guarded by "multiSourceSeeded_v3" UserDefaults flag — runs once per install.
+    @MainActor
+    private static func seedMultiSourceIfNeeded(context: ModelContext) {
+        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v3") else { return }
+
+        guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else {
+            print("multi_source_seed.json not found in bundle")
+            return
+        }
+
+        guard let seed = try? JSONDecoder().decode(MultiSourceSeedData.self, from: data) else {
+            print("Failed to decode multi_source_seed.json")
+            return
+        }
+
+        var courseMap: [String: Course] = [:]
+        // Fetch existing courses to avoid duplicates
+        let courseDescriptor = FetchDescriptor<Course>()
+        let existingCourses = (try? context.fetch(courseDescriptor)) ?? []
+        for course in existingCourses {
+            courseMap["\(course.sourceId)_\(course.courseNumber)"] = course
+        }
+
+        for seedCourse in seed.courses {
+            let key = "\(seedCourse.sourceId)_\(seedCourse.courseNumber)"
+            guard courseMap[key] == nil else { continue }
+            let course = Course(
+                courseNumber: seedCourse.courseNumber,
+                title: seedCourse.title,
+                department: seedCourse.department,
+                semester: seedCourse.semester,
+                year: seedCourse.year
+            )
+            course.sourceId = seedCourse.sourceId
+            context.insert(course)
+            courseMap[key] = course
+        }
+
+        // Dedup against existing lectures
+        let lectureDescriptor = FetchDescriptor<Lecture>()
+        let existingLectures = (try? context.fetch(lectureDescriptor)) ?? []
+        let existingIds = Set(existingLectures.map { $0.youtubeId.lowercased() })
+
+        var inserted = 0
+        for seedLecture in seed.lectures {
+            guard !existingIds.contains(seedLecture.youtubeId.lowercased()) else { continue }
+            let lecture = Lecture(
+                title: seedLecture.title,
+                youtubeId: seedLecture.youtubeId,
+                courseNumber: seedLecture.courseNumber,
+                courseName: seedLecture.courseName,
+                department: seedLecture.department,
+                semester: seedLecture.semester,
+                year: seedLecture.year,
+                ocwUrl: seedLecture.ocwUrl,
+                topicName: seedLecture.topicName
+            )
+            lecture.sourceId = seedLecture.sourceId
+            context.insert(lecture)
+
+            let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
+            if let course = courseMap[key] {
+                lecture.course = course
+            }
+            inserted += 1
+        }
+
+        if inserted > 0 {
+            try? context.save()
+        }
+        UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v3")
+        print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
+    }
+
+    // MARK: - YouTube Fetch Pipeline
+
+    /// Fetches lecture videos from enabled non-MIT sources via YouTube Data API v3.
+    /// Per-source throttle: once every 24 hours.
+    private static func startYouTubeFetch(container: ModelContainer) {
+        let apiKey = APIKeys.youtube
+        guard !apiKey.isEmpty else {
+            print("YouTubeFetch: no API key configured, skipping")
+            return
+        }
+
+        let preferences = SourcePreferences.shared
+        let enabledNonMIT = preferences.enabledSourceIds.filter { $0 != "mit" }
+        guard !enabledNonMIT.isEmpty else { return }
+
+        Task.detached(priority: .utility) {
+            let client = YouTubeAPIClient(apiKey: apiKey)
+
+            for sourceId in enabledNonMIT {
+                guard let source = UniversitySource(rawValue: sourceId),
+                      source.contentType == .youtubeAPI else { continue }
+
+                // Per-source 24h throttle
+                let lastKey = "lastYTFetch_\(sourceId)"
+                let last = UserDefaults.standard.double(forKey: lastKey)
+                let hours = (Date().timeIntervalSince1970 - last) / 3600
+                guard hours > 24 || last == 0 else { continue }
+
+                do {
+                    let videos = try await client.fetchAllVideos(for: source)
+                    print("YouTubeFetch: \(source.displayName) → \(videos.count) videos")
+
+                    await MainActor.run {
+                        mergeYouTubeData(videos, source: source, into: container.mainContext)
+                        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastKey)
+                    }
+                } catch {
+                    print("YouTubeFetch failed for \(source.displayName): \(error)")
+                }
+            }
+        }
+    }
+
+    /// Merge YouTube API videos into SwiftData, skipping duplicates by youtubeId.
+    @MainActor
+    private static func mergeYouTubeData(
+        _ videos: [YouTubeVideo],
+        source: UniversitySource,
+        into context: ModelContext
+    ) {
+        let descriptor = FetchDescriptor<Lecture>()
+        let existing = (try? context.fetch(descriptor)) ?? []
+        let existingIds = Set(existing.map { $0.youtubeId.lowercased() })
+
+        let courseDescriptor = FetchDescriptor<Course>()
+        let existingCourses = (try? context.fetch(courseDescriptor)) ?? []
+        var courseMap: [String: Course] = [:]
+        for course in existingCourses {
+            courseMap["\(course.sourceId)_\(course.courseNumber)"] = course
+        }
+
+        var inserted = 0
+        for video in videos {
+            guard !existingIds.contains(video.videoId.lowercased()) else { continue }
+
+            // Use playlist title as course name / number
+            let courseNumber = video.playlistTitle
+                .components(separatedBy: ":")
+                .first?
+                .trimmingCharacters(in: .whitespaces) ?? video.playlistTitle
+
+            let lecture = Lecture(
+                title: video.title,
+                youtubeId: video.videoId,
+                courseNumber: courseNumber,
+                courseName: video.playlistTitle,
+                department: "",
+                semester: "",
+                year: 0,
+                ocwUrl: "",
+                topicName: ""
+            )
+            lecture.sourceId = source.rawValue
+            context.insert(lecture)
+
+            let courseKey = "\(source.rawValue)_\(courseNumber)"
+            if let course = courseMap[courseKey] {
+                lecture.course = course
+            } else {
+                let course = Course(
+                    courseNumber: courseNumber,
+                    title: video.playlistTitle,
+                    department: ""
+                )
+                course.sourceId = source.rawValue
+                context.insert(course)
+                courseMap[courseKey] = course
+                lecture.course = course
+            }
+
+            inserted += 1
+        }
+
+        if inserted > 0 {
+            try? context.save()
+            print("YouTubeFetch: merged \(inserted) new \(source.shortName) lectures")
+        }
+    }
 }
 
 // MARK: - Seed Data Codable Types
@@ -268,4 +457,33 @@ private struct SeedCourse: Decodable {
     let department: String
     let semester: String
     let year: Int
+}
+
+// MARK: - Multi-Source Seed Data Codable Types
+
+private struct MultiSourceSeedData: Decodable {
+    let lectures: [MultiSourceSeedLecture]
+    let courses: [MultiSourceSeedCourse]
+}
+
+private struct MultiSourceSeedLecture: Decodable {
+    let title: String
+    let youtubeId: String
+    let courseNumber: String
+    let courseName: String
+    let department: String
+    let semester: String
+    let year: Int
+    let ocwUrl: String
+    let topicName: String
+    let sourceId: String
+}
+
+private struct MultiSourceSeedCourse: Decodable {
+    let courseNumber: String
+    let title: String
+    let department: String
+    let semester: String
+    let year: Int
+    let sourceId: String
 }

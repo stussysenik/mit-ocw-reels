@@ -14,14 +14,18 @@ struct CoursesView: View {
     @State private var searchText = ""
     @State private var showSettings = false
     @State private var cachedSchoolData: [(school: MITSchool, courses: [Course], lectureCount: Int, departments: [String])] = []
+    @State private var cachedSourceData: [(source: UniversitySource, courses: [Course], lectureCount: Int, departments: [String])] = []
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
     @AppStorage("courseViewMode") private var courseViewMode = "list"
+    @StateObject private var sourcePrefs = SourcePreferences.shared
 
     private func recomputeSchoolData() {
+        // MIT courses only — filtered to sourceId == "mit"
+        let mitCourses = courses.filter { $0.sourceId == "mit" }
         let filtered = searchText.isEmpty
-            ? courses
-            : courses.filter {
+            ? mitCourses
+            : mitCourses.filter {
                 $0.title.localizedCaseInsensitiveContains(searchText)
                 || $0.courseNumber.localizedCaseInsensitiveContains(searchText)
                 || $0.department.localizedCaseInsensitiveContains(searchText)
@@ -38,6 +42,30 @@ struct CoursesView: View {
             let departments = Array(Set(schoolCourses.map(\.department))).filter { !$0.isEmpty }.sorted()
             return (school: school, courses: schoolCourses, lectureCount: lectureCount, departments: departments)
         }
+
+        recomputeSourceData()
+    }
+
+    private func recomputeSourceData() {
+        let enabledIds = sourcePrefs.enabledSourceIds
+        let nonMitCourses = courses.filter { $0.sourceId != "mit" && enabledIds.contains($0.sourceId) }
+        let filtered = searchText.isEmpty
+            ? nonMitCourses
+            : nonMitCourses.filter {
+                $0.title.localizedCaseInsensitiveContains(searchText)
+                || $0.courseNumber.localizedCaseInsensitiveContains(searchText)
+                || $0.department.localizedCaseInsensitiveContains(searchText)
+                || ($0.source.shortName.localizedCaseInsensitiveContains(searchText))
+            }
+
+        let bySource = Dictionary(grouping: filtered, by: \.sourceId)
+        cachedSourceData = bySource.compactMap { (sourceId, sourceCourses) -> (source: UniversitySource, courses: [Course], lectureCount: Int, departments: [String])? in
+            guard let source = UniversitySource(rawValue: sourceId) else { return nil }
+            let lectureCount = sourceCourses.reduce(0) { $0 + ($1.lectures?.count ?? 0) }
+            let departments = Array(Set(sourceCourses.map(\.department))).filter { !$0.isEmpty }.sorted()
+            return (source: source, courses: sourceCourses, lectureCount: lectureCount, departments: departments)
+        }
+        .sorted { $0.source.displayName < $1.source.displayName }
     }
 
     var body: some View {
@@ -53,6 +81,7 @@ struct CoursesView: View {
                     .frame(maxWidth: .infinity, minHeight: 300)
                 } else {
                     VStack(spacing: Spacing.md) {
+                        // MIT Schools
                         ForEach(cachedSchoolData, id: \.school) { data in
                             NavigationLink(destination: SchoolDetailView(
                                 school: data.school,
@@ -66,6 +95,32 @@ struct CoursesView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                        }
+
+                        // More Sources — non-MIT universities
+                        if !cachedSourceData.isEmpty {
+                            HStack {
+                                Text("More Sources")
+                                    .font(.headline)
+                                    .foregroundStyle(CarbonColor.textPrimary)
+                                Spacer()
+                            }
+                            .padding(.top, Spacing.sm)
+
+                            ForEach(cachedSourceData, id: \.source) { data in
+                                NavigationLink(destination: SourceDetailView(
+                                    source: data.source,
+                                    courses: data.courses
+                                )) {
+                                    SourceCardView(
+                                        source: data.source,
+                                        courseCount: data.courses.count,
+                                        lectureCount: data.lectureCount,
+                                        departments: data.departments
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
                     .padding(.horizontal, Spacing.md)
@@ -143,6 +198,46 @@ struct CoursesView: View {
                 }
 
                 Section {
+                    // MIT — always on
+                    HStack(spacing: Spacing.sm) {
+                        Circle()
+                            .fill(UniversitySource.mit.brandColor)
+                            .frame(width: 8, height: 8)
+                        Text("MIT OpenCourseWare")
+                            .font(.body)
+                            .foregroundStyle(CarbonColor.textPrimary)
+                        Spacer()
+                        Text("Always On")
+                            .font(.caption)
+                            .foregroundStyle(CarbonColor.textPlaceholder)
+                    }
+
+                    // Toggleable sources
+                    ForEach(sourcePrefs.toggleableSources) { source in
+                        Toggle(isOn: Binding(
+                            get: { sourcePrefs.isEnabled(source) },
+                            set: { sourcePrefs.setEnabled(source, $0) }
+                        )) {
+                            HStack(spacing: Spacing.sm) {
+                                Circle()
+                                    .fill(source.brandColor)
+                                    .frame(width: 8, height: 8)
+                                Text(source.displayName)
+                                    .font(.body)
+                                    .foregroundStyle(CarbonColor.textPrimary)
+                            }
+                        }
+                        .tint(CarbonColor.interactive)
+                    }
+                } header: {
+                    Text("Lecture Sources")
+                        .font(.caption2)
+                        .foregroundStyle(CarbonColor.textLabel)
+                        .textCase(.uppercase)
+                        .tracking(1)
+                }
+
+                Section {
                     Picker("Default View", selection: $courseViewMode) {
                         Label("List", systemImage: "list.bullet").tag("list")
                         Label("Grid", systemImage: "square.grid.2x2").tag("grid")
@@ -165,7 +260,7 @@ struct CoursesView: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 }
 

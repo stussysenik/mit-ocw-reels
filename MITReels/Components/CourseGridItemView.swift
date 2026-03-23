@@ -8,7 +8,7 @@ import SwiftUI
 /// O(1) rendering: thumbnail video ID is cached on appear, not recomputed per render.
 struct CourseGridItemView: View {
     let course: Course
-    let school: MITSchool
+    let accentColor: Color
 
     /// Cached on appear — avoids .filter().sorted() on every render.
     @State private var cachedThumbnailId: String?
@@ -39,7 +39,7 @@ struct CourseGridItemView: View {
             Text(course.courseNumber)
                 .font(.system(.caption2, design: .monospaced))
                 .fontWeight(.semibold)
-                .foregroundStyle(school.color)
+                .foregroundStyle(accentColor)
 
             Text(course.title)
                 .font(.caption)
