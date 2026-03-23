@@ -105,42 +105,49 @@ struct ReelView: View {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(16 / 9, contentMode: .fit)
 
-            // Metadata line — tap text to expand, chevron-only for course nav
-            HStack(spacing: 6) {
-                Text(sourceName)
-                    .font(Typography.reelMeta)
-                    .foregroundStyle(accentColor)
+            // Metadata — two rows: text on top (full width), actions below (right-aligned)
+            VStack(alignment: .leading, spacing: 2) {
+                // Row 1: Source · Course · Semester · Instructor — full width
+                HStack(spacing: 6) {
+                    Text(sourceName)
+                        .font(Typography.reelMeta)
+                        .foregroundStyle(accentColor)
 
-                Text("\u{00B7}")
-                    .foregroundStyle(CarbonColor.textTertiary)
-
-                Text(lecture.courseName)
-                    .font(Typography.reelMeta)
-                    .foregroundStyle(CarbonColor.textLabel)
-                    .lineLimit(showFullLabels ? nil : 1)
-
-                if !lecture.semester.isEmpty && lecture.year > 0 {
                     Text("\u{00B7}")
                         .foregroundStyle(CarbonColor.textTertiary)
 
-                    Text("\(lecture.semester) \(String(lecture.year))")
+                    Text(lecture.courseName)
                         .font(Typography.reelMeta)
-                        .foregroundStyle(CarbonColor.textPlaceholder)
-                }
-
-                if !lecture.instructor.isEmpty {
-                    Text("\u{00B7}")
-                        .foregroundStyle(CarbonColor.textTertiary)
-
-                    Text(lecture.instructor)
-                        .font(Typography.reelMeta)
-                        .foregroundStyle(CarbonColor.textPlaceholder)
+                        .foregroundStyle(CarbonColor.textLabel)
                         .lineLimit(showFullLabels ? nil : 1)
+
+                    if !lecture.semester.isEmpty && lecture.year > 0 {
+                        Text("\u{00B7}")
+                            .foregroundStyle(CarbonColor.textTertiary)
+
+                        Text("\(lecture.semester) \(String(lecture.year))")
+                            .font(Typography.reelMeta)
+                            .foregroundStyle(CarbonColor.textPlaceholder)
+                    }
+
+                    if !lecture.instructor.isEmpty {
+                        Text("\u{00B7}")
+                            .foregroundStyle(CarbonColor.textTertiary)
+
+                        Text(lecture.instructor)
+                            .font(Typography.reelMeta)
+                            .foregroundStyle(CarbonColor.textPlaceholder)
+                            .lineLimit(showFullLabels ? nil : 1)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { showFullLabels.toggle() }
                 }
 
-                Spacer()
-
+                // Row 2: Actions — right-aligned
                 HStack(spacing: Spacing.sm) {
+                    Spacer()
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
@@ -151,13 +158,12 @@ struct ReelView: View {
                         }
                     } label: {
                         Image(systemName: showLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundStyle(showLiked ? .green : CarbonColor.textTertiary)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 36, height: 28)
                             .contentShape(Rectangle())
                     }
                     Button {
-                        // Choreographed: toast → pause → haptic → auto-advance
                         FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
                         withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
                         showToast("Less like this")
@@ -166,31 +172,25 @@ struct ReelView: View {
                         }
                     } label: {
                         Image(systemName: showDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundStyle(showDisliked ? CarbonColor.interactive : CarbonColor.textTertiary)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 36, height: 28)
                             .contentShape(Rectangle())
                     }
-                }
-
-                if onViewCourse != nil {
-                    Button { onViewCourse?(lecture) } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(CarbonColor.textTertiary)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                    if onViewCourse != nil {
+                        Button { onViewCourse?(lecture) } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(CarbonColor.textTertiary)
+                                .frame(width: 36, height: 28)
+                                .contentShape(Rectangle())
+                        }
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.md)
             .padding(.top, Spacing.sm)
             .padding(.bottom, Spacing.xs)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) { showFullLabels.toggle() }
-            }
 
             // OCW links (YouTube is accessible via the overlay button on the video)
             if let courseBase = Self.courseBaseString(from: lecture.ocwUrl) {
