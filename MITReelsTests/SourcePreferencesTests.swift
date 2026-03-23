@@ -33,7 +33,7 @@ struct SourcePreferencesTests {
     @Test func toggleableSourcesExcludesMIT() {
         let prefs = SourcePreferences()
         #expect(!prefs.toggleableSources.contains(.mit))
-        #expect(prefs.toggleableSources.count == 38) // 39 total - 1 MIT
+        #expect(prefs.toggleableSources.count == 46) // 47 total - 1 MIT
     }
 
     @Test func enabledSourceIdsAlwaysContainsMIT() {

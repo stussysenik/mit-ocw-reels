@@ -56,6 +56,16 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
     case deepMind = "deepmind"
     case yannicKilcher = "yannic_kilcher"
 
+    // Creative / Production / Tools
+    case matlab = "matlab"
+    case blenderGuru = "blender_guru"
+    case unrealEngine = "unreal_engine"
+    case adamNeely = "adam_neely"
+    case inTheMix = "in_the_mix"
+    case musicTechHelp = "music_tech_help"
+    case filmRiot = "film_riot"
+    case meetTheGaffer = "meet_the_gaffer"
+
     var id: String { rawValue }
 
     // MARK: - Display
@@ -101,6 +111,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return "Lex Fridman"
         case .deepMind: return "Google DeepMind"
         case .yannicKilcher: return "Yannic Kilcher"
+        case .matlab: return "MATLAB"
+        case .blenderGuru: return "Blender Guru"
+        case .unrealEngine: return "Unreal Engine"
+        case .adamNeely: return "Adam Neely"
+        case .inTheMix: return "In The Mix"
+        case .musicTechHelp: return "MusicTechHelpGuy"
+        case .filmRiot: return "Film Riot"
+        case .meetTheGaffer: return "Meet The Gaffer"
         }
     }
 
@@ -145,6 +163,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return "Lex"
         case .deepMind: return "DeepMind"
         case .yannicKilcher: return "Yannic"
+        case .matlab: return "MATLAB"
+        case .blenderGuru: return "Blender"
+        case .unrealEngine: return "Unreal"
+        case .adamNeely: return "Adam Neely"
+        case .inTheMix: return "ITM"
+        case .musicTechHelp: return "MTH"
+        case .filmRiot: return "Film Riot"
+        case .meetTheGaffer: return "Gaffer"
         }
     }
 
@@ -189,6 +215,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return "mic"
         case .deepMind: return "brain"
         case .yannicKilcher: return "doc.text.magnifyingglass"
+        case .matlab: return "x.squareroot"
+        case .blenderGuru: return "cube"
+        case .unrealEngine: return "paintbrush"
+        case .adamNeely: return "music.note"
+        case .inTheMix: return "slider.horizontal.3"
+        case .musicTechHelp: return "waveform"
+        case .filmRiot: return "film"
+        case .meetTheGaffer: return "lightbulb.max"
         }
     }
 
@@ -235,6 +269,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return Color(hex: 0x2C3E50)
         case .deepMind: return Color(hex: 0x4285F4)
         case .yannicKilcher: return Color(hex: 0xF39C12)
+        case .matlab: return Color(hex: 0x0076A8)
+        case .blenderGuru: return Color(hex: 0xE87D0D)
+        case .unrealEngine: return Color(hex: 0x313131)
+        case .adamNeely: return Color(hex: 0xC0392B)
+        case .inTheMix: return Color(hex: 0x8E44AD)
+        case .musicTechHelp: return Color(hex: 0x2E86C1)
+        case .filmRiot: return Color(hex: 0xD35400)
+        case .meetTheGaffer: return Color(hex: 0xF1C40F)
         }
     }
 
@@ -279,6 +321,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return Color(hex: 0x5D6D7E)
         case .deepMind: return Color(hex: 0x7BAAF7)
         case .yannicKilcher: return Color(hex: 0xF7C948)
+        case .matlab: return Color(hex: 0x40A8D8)
+        case .blenderGuru: return Color(hex: 0xF4A94D)
+        case .unrealEngine: return Color(hex: 0x5A5A5A)
+        case .adamNeely: return Color(hex: 0xE67373)
+        case .inTheMix: return Color(hex: 0xBB8FCE)
+        case .musicTechHelp: return Color(hex: 0x5DADE2)
+        case .filmRiot: return Color(hex: 0xF08040)
+        case .meetTheGaffer: return Color(hex: 0xF7DC6F)
         }
     }
 
@@ -325,6 +375,14 @@ enum UniversitySource: String, CaseIterable, Identifiable, Codable {
         case .lexFridman: return "UCSHZKyawb77ixDdsGog4iWA"
         case .deepMind: return "UCP7jMXSY2xbc3KCAE0MHQ-A"
         case .yannicKilcher: return "UCZHmQk67mSJgfCCTn7xBfew"
+        case .matlab: return "UCgdHSFcXvkN6O3NXvif0-pA"
+        case .blenderGuru: return "UCOKHwx1VCdgnxwbjyb9Iu1g"
+        case .unrealEngine: return "UCBobmJyzsJ6Ll7UbfhI4iwQ"
+        case .adamNeely: return "UCnkp4xDOwqqJD7sSM3xdUiQ"
+        case .inTheMix: return "UCIcCXe3iWo6lq-iWKV40Oug"
+        case .musicTechHelp: return "UC21BwBKSKiPFbNvzl3-eh_A"
+        case .filmRiot: return "UC6P24bhhCmMPOcujA9PKPTA"
+        case .meetTheGaffer: return "UCt7_XcAZ6vyc0j55qWDrjZQ"
         }
     }
 

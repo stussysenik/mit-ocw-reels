@@ -316,9 +316,9 @@ struct MITReelsApp: App {
     // MARK: - Multi-Source Seed Data Loader (Async)
 
     /// Seeds non-MIT lecture sources from multi_source_seed.json in a background task.
-    /// Batches inserts in chunks of 200 to avoid blocking main thread with 5000+ records.
+    /// Uses separate MainActor.run blocks per batch so UI renders between batches.
     private static func startMultiSourceSeed(container: ModelContainer) {
-        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v5") else { return }
+        guard !UserDefaults.standard.bool(forKey: "multiSourceSeeded_v6") else { return }
 
         Task.detached(priority: .utility) {
             guard let url = Bundle.main.url(forResource: "multi_source_seed", withExtension: "json"),
@@ -328,19 +328,17 @@ struct MITReelsApp: App {
                 return
             }
 
-            // Insert in batches on MainActor to avoid blocking UI
-            let batchSize = 200
-            await MainActor.run {
+            // Phase 1: Insert courses (small — ~1800 records, fast)
+            let courseMap: [String: Course] = await MainActor.run {
                 let courseDescriptor = FetchDescriptor<Course>()
                 let existingCourses = (try? container.mainContext.fetch(courseDescriptor)) ?? []
-                var courseMap: [String: Course] = [:]
+                var map: [String: Course] = [:]
                 for course in existingCourses {
-                    courseMap["\(course.sourceId)_\(course.courseNumber)"] = course
+                    map["\(course.sourceId)_\(course.courseNumber)"] = course
                 }
-
                 for seedCourse in seed.courses {
                     let key = "\(seedCourse.sourceId)_\(seedCourse.courseNumber)"
-                    guard courseMap[key] == nil else { continue }
+                    guard map[key] == nil else { continue }
                     let course = Course(
                         courseNumber: seedCourse.courseNumber,
                         title: seedCourse.title,
@@ -350,48 +348,66 @@ struct MITReelsApp: App {
                     )
                     course.sourceId = seedCourse.sourceId
                     container.mainContext.insert(course)
-                    courseMap[key] = course
+                    map[key] = course
                 }
-
-                let lectureDescriptor = FetchDescriptor<Lecture>()
-                let existingLectures = (try? container.mainContext.fetch(lectureDescriptor)) ?? []
-                let existingIds = Set(existingLectures.map { $0.youtubeId.lowercased() })
-
-                var inserted = 0
-                for (index, seedLecture) in seed.lectures.enumerated() {
-                    guard !existingIds.contains(seedLecture.youtubeId.lowercased()) else { continue }
-                    let lecture = Lecture(
-                        title: seedLecture.title,
-                        youtubeId: seedLecture.youtubeId,
-                        courseNumber: seedLecture.courseNumber,
-                        courseName: seedLecture.courseName,
-                        department: seedLecture.department,
-                        semester: seedLecture.semester,
-                        year: seedLecture.year,
-                        ocwUrl: seedLecture.ocwUrl,
-                        topicName: seedLecture.topicName
-                    )
-                    lecture.sourceId = seedLecture.sourceId
-                    container.mainContext.insert(lecture)
-
-                    let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
-                    if let course = courseMap[key] {
-                        lecture.course = course
-                    }
-                    inserted += 1
-
-                    // Save in batches to yield main thread
-                    if inserted % batchSize == 0 {
-                        try? container.mainContext.save()
-                    }
-                }
-
-                if inserted > 0 {
-                    try? container.mainContext.save()
-                }
-                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v5")
-                print("Multi-source seed: \(inserted) lectures across \(seed.courses.count) courses")
+                try? container.mainContext.save()
+                return map
             }
+
+            // Phase 2: Get existing lecture IDs to dedup
+            let existingIds: Set<String> = await MainActor.run {
+                let d = FetchDescriptor<Lecture>()
+                let all = (try? container.mainContext.fetch(d)) ?? []
+                return Set(all.map { $0.youtubeId.lowercased() })
+            }
+
+            // Phase 3: Insert lectures in batches — each batch is a separate MainActor.run
+            // This yields the main thread between batches so SwiftUI can render
+            let batchSize = 200
+            var totalInserted = 0
+            let lectures = seed.lectures.filter { !existingIds.contains($0.youtubeId.lowercased()) }
+
+            var batchStart = 0
+            while batchStart < lectures.count {
+                let batchEnd = min(batchStart + batchSize, lectures.count)
+                let batch = Array(lectures[batchStart..<batchEnd])
+
+                let inserted: Int = await MainActor.run {
+                    var count = 0
+                    for seedLecture in batch {
+                        let lecture = Lecture(
+                            title: seedLecture.title,
+                            youtubeId: seedLecture.youtubeId,
+                            courseNumber: seedLecture.courseNumber,
+                            courseName: seedLecture.courseName,
+                            department: seedLecture.department,
+                            semester: seedLecture.semester,
+                            year: seedLecture.year,
+                            ocwUrl: seedLecture.ocwUrl,
+                            topicName: seedLecture.topicName
+                        )
+                        lecture.sourceId = seedLecture.sourceId
+                        container.mainContext.insert(lecture)
+
+                        let key = "\(seedLecture.sourceId)_\(seedLecture.courseNumber)"
+                        if let course = courseMap[key] {
+                            lecture.course = course
+                        }
+                        count += 1
+                    }
+                    try? container.mainContext.save()
+                    return count
+                }
+
+                totalInserted += inserted
+                batchStart = batchEnd
+                // Yield — SwiftUI renders, no hang > 50ms per batch
+            }
+
+            await MainActor.run {
+                UserDefaults.standard.set(true, forKey: "multiSourceSeeded_v6")
+            }
+            print("Multi-source seed: \(totalInserted) lectures across \(seed.courses.count) courses")
         }
     }
 

@@ -32,8 +32,8 @@ struct UniversitySourceTests {
         #expect(UniversitySource.mit.rawValue == "mit")
     }
 
-    @Test func allCasesCountIs39() {
-        #expect(UniversitySource.allCases.count == 39)
+    @Test func allCasesCountIs47() {
+        #expect(UniversitySource.allCases.count == 47)
     }
 
     @Test func mitUsesOcwSitemap() {
