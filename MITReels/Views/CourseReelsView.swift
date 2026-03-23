@@ -84,6 +84,12 @@ struct CourseReelsView: View {
                   idx + 1 < cachedLectures.count else { return }
             withAnimation { visibleId = cachedLectures[idx + 1].youtubeId }
         }
+        .onReceive(NotificationCenter.default.publisher(for: ReelView.dislikeAdvanceNotification)) { note in
+            guard let dislikedId = note.object as? String, dislikedId == visibleId,
+                  let idx = cachedLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
+                  idx + 1 < cachedLectures.count else { return }
+            withAnimation { visibleId = cachedLectures[idx + 1].youtubeId }
+        }
         .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
             guard let videoId = note.object as? String else { return }
             if videoId == visibleId,
