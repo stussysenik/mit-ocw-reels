@@ -75,6 +75,18 @@ final class FeedPreferences: ObservableObject {
         objectWillChange.send()
     }
 
+    func resetSourceWeight(_ sourceId: String) {
+        var w = sourceWeights; w.removeValue(forKey: sourceId)
+        UserDefaults.standard.set(w, forKey: sourceWeightsKey)
+        objectWillChange.send()
+    }
+
+    func resetTopicWeight(_ topic: String) {
+        var w = topicWeights; w.removeValue(forKey: topic)
+        UserDefaults.standard.set(w, forKey: topicWeightsKey)
+        objectWillChange.send()
+    }
+
     /// Non-default weights for display in settings. Returns (id, weight) pairs sorted by weight.
     var adjustedSourceWeights: [(id: String, weight: Double)] {
         sourceWeights.filter { abs($0.value - 1.0) > 0.01 }.map { ($0.key, $0.value) }.sorted { $0.1 > $1.1 }

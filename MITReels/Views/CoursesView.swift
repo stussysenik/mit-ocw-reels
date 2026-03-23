@@ -259,6 +259,11 @@ struct CoursesView: View {
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(item.weight > 1.0 ? .green : .red)
                     }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { feedPrefs.resetSourceWeight(item.id) } label: {
+                            Label("Reset", systemImage: "arrow.counterclockwise")
+                        }
+                    }
                 }
                 ForEach(topicWeights, id: \.id) { item in
                     HStack {
@@ -268,6 +273,11 @@ struct CoursesView: View {
                         Text(String(format: "%.1fx", item.weight))
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(item.weight > 1.0 ? .green : .red)
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { feedPrefs.resetTopicWeight(item.id) } label: {
+                            Label("Reset", systemImage: "arrow.counterclockwise")
+                        }
                     }
                 }
                 Button("Reset to Defaults", role: .destructive) {

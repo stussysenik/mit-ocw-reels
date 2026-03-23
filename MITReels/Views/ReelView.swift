@@ -30,6 +30,7 @@ struct ReelView: View {
     @State private var hasVideoError = false
     @State private var showLiked = false
     @State private var showDisliked = false
+    @State private var toastText: String?
     @State private var currentTime: Double = 0
     @State private var duration: Double = 0
     @State private var isPlaying = false
@@ -144,6 +145,7 @@ struct ReelView: View {
                         g.impactOccurred()
                         FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
                         withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
+                        showToast("More like this")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                             withAnimation { showLiked = false }
                         }
@@ -159,6 +161,7 @@ struct ReelView: View {
                         g.impactOccurred()
                         FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
                         withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
+                        showToast("Got it, less of this")
                     } label: {
                         Image(systemName: showDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                             .font(.subheadline)
@@ -303,6 +306,25 @@ struct ReelView: View {
             }
         }
         .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+        .overlay(alignment: .bottom) {
+            if let toast = toastText {
+                Text(toast)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.7), in: Capsule())
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.bottom, Spacing.md)
+            }
+        }
+    }
+
+    private func showToast(_ text: String) {
+        withAnimation(.easeOut(duration: 0.2)) { toastText = text }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.easeIn(duration: 0.3)) { toastText = nil }
+        }
     }
 }
 
