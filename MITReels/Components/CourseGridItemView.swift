@@ -78,3 +78,12 @@ struct CourseGridItemView: View {
         }
     }
 }
+
+#Preview {
+    CourseGridItemView(
+        course: PreviewSampleData.sampleCourse,
+        accentColor: .blue
+    )
+    .frame(width: 180)
+    .modelContainer(PreviewSampleData.container)
+}

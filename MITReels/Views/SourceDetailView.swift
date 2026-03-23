@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Per-source course browser — same pattern as SchoolDetailView but for non-MIT sources.
@@ -225,4 +226,15 @@ struct SourceDetailView: View {
             .padding(.vertical, Spacing.sm)
         }
     }
+}
+
+#Preview {
+    NavigationStack {
+        SourceDetailView(
+            source: .stanford,
+            courses: try! PreviewSampleData.container.mainContext.fetch(FetchDescriptor<Course>())
+                .filter { $0.sourceId == "stanford" }
+        )
+    }
+    .modelContainer(PreviewSampleData.container)
 }

@@ -60,3 +60,13 @@ struct SchoolCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.card))
     }
 }
+
+#Preview {
+    SchoolCardView(
+        school: .engineering,
+        courseCount: 12,
+        lectureCount: 87,
+        departments: ["EECS", "Mechanical Eng", "Civil Eng"]
+    )
+    .padding()
+}

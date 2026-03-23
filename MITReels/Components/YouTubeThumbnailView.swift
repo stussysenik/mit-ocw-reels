@@ -49,3 +49,10 @@ struct YouTubeThumbnailView: View {
         }
     }
 }
+
+#Preview {
+    YouTubeThumbnailView(videoId: "nykOeWgQcHM")
+        .aspectRatio(16 / 9, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding()
+}

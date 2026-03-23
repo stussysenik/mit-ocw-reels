@@ -59,3 +59,13 @@ struct SourceCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.card))
     }
 }
+
+#Preview {
+    SourceCardView(
+        source: .stanford,
+        courseCount: 8,
+        lectureCount: 42,
+        departments: ["Computer Science", "Physics"]
+    )
+    .padding()
+}

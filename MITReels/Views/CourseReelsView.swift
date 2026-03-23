@@ -11,7 +11,6 @@ struct CourseReelsView: View {
     var initialLectureId: String? = nil
     @State private var visibleId: String?
     @State private var nextId: String?
-    @State private var prevId: String?
     @State private var cachedLectures: [Lecture] = []
     @State private var hasScrolled = false
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
@@ -38,7 +37,7 @@ struct CourseReelsView: View {
                                 lecture: lecture,
                                 lectureIndex: index,
                                 isVisible: visibleId == lecture.youtubeId,
-                                isNearby: lecture.youtubeId == nextId || lecture.youtubeId == prevId,
+                                isNearby: lecture.youtubeId == nextId,
                                 autoplayEnabled: autoplayEnabled,
                                 captionsEnabled: captionsEnabled
                             )
@@ -76,9 +75,7 @@ struct CourseReelsView: View {
             // Defer preload updates to after scroll animation settles
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
-                let adj = lectures.adjacentIds(for: vid)
-                nextId = adj.next
-                prevId = adj.prev
+                nextId = lectures.nextId(after: vid)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in

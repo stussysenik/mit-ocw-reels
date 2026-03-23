@@ -31,3 +31,10 @@ struct ShimmerView: View {
         }
     }
 }
+
+#Preview {
+    ShimmerView()
+        .frame(height: 200)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding()
+}

@@ -15,7 +15,6 @@ struct DiscoverView: View {
     @State private var shuffledLectures: [Lecture] = []
     @SceneStorage("discoverVisibleId") private var visibleId: String?
     @State private var nextId: String?
-    @State private var prevId: String?
     @State private var hasScrolled = false
     @State private var navigateToCourse: Course?
     @State private var navigateToLectureId: String?
@@ -23,6 +22,7 @@ struct DiscoverView: View {
     @State private var rebuildTask: Task<Void, Never>?
     @State private var lastBuiltSources: Set<String> = []
 
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
     @AppStorage("captionsEnabled") private var captionsEnabled = true
     @StateObject private var sourcePrefs = SourcePreferences.shared
@@ -61,11 +61,15 @@ struct DiscoverView: View {
         }
         .onChange(of: lectures.count) { old, n in
             guard n > old else { return }
-            if shuffledLectures.isEmpty { rebuildFeed() }
+            // Large batch (multi-source seed) → full rebuild for proportionate sampling
+            if shuffledLectures.isEmpty || (n - old) > 100 { rebuildFeed() }
             else { appendNewLectures() }
         }
         .onChange(of: sourcePrefs.enabledSourceIds) { _, _ in debouncedRebuildFeed() }
         .onChange(of: feedPrefs.blockedIds.count) { _, _ in debouncedRebuildFeed() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { rebuildFeed() }
+        }
         .onChange(of: visibleId) { old, new in
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
@@ -73,9 +77,7 @@ struct DiscoverView: View {
             // Defer preload updates to after scroll animation settles
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
-                let adj = shuffledLectures.adjacentIds(for: visibleId)
-                nextId = adj.next
-                prevId = adj.prev
+                nextId = shuffledLectures.nextId(after: visibleId)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
@@ -127,7 +129,7 @@ struct DiscoverView: View {
                         ReelView(
                             lecture: lecture,
                             isVisible: visibleId == lecture.youtubeId,
-                            isNearby: lecture.youtubeId == nextId || lecture.youtubeId == prevId,
+                            isNearby: lecture.youtubeId == nextId,
                             autoplayEnabled: autoplayEnabled,
                             captionsEnabled: captionsEnabled,
                             onViewCourse: { tappedLecture in
@@ -171,6 +173,8 @@ struct DiscoverView: View {
     // MARK: - Helpers
 
     private static let feedLimit = 200
+    /// Max lectures from any single course in one feed — prevents large courses from dominating.
+    private static let maxPerCourse = 3
 
     private func debouncedRebuildFeed() {
         rebuildTask?.cancel()
@@ -189,10 +193,21 @@ struct DiscoverView: View {
     }
 
     /// Append newly-arrived lectures without reshuffling the existing feed.
+    /// Respects per-course and per-source diversity against existing content.
     private func appendNewLectures() {
         let existing = Set(shuffledLectures.map { $0.youtubeId.lowercased() })
         let blocked = feedPrefs.blockedIds
         let enabled = sourcePrefs.enabledSourceIds
+
+        // Track current counts per course and source
+        var courseCounts: [String: Int] = [:]
+        var sourceCounts: [String: Int] = [:]
+        for lecture in shuffledLectures {
+            courseCounts["\(lecture.sourceId)_\(lecture.courseNumber)", default: 0] += 1
+            sourceCounts[lecture.sourceId, default: 0] += 1
+        }
+        let sourceShare = Self.feedLimit / max(enabled.count, 1)
+
         var fresh = lectures.filter {
             $0.isFeedEligible
             && !existing.contains($0.youtubeId.lowercased())
@@ -201,17 +216,70 @@ struct DiscoverView: View {
         }
         guard !fresh.isEmpty, shuffledLectures.count < Self.feedLimit else { return }
         fresh.shuffle()
-        shuffledLectures.append(contentsOf: fresh.prefix(Self.feedLimit - shuffledLectures.count))
+
+        var toAppend: [Lecture] = []
+        for lecture in fresh {
+            guard toAppend.count + shuffledLectures.count < Self.feedLimit else { break }
+            let courseKey = "\(lecture.sourceId)_\(lecture.courseNumber)"
+            guard (courseCounts[courseKey] ?? 0) < Self.maxPerCourse else { continue }
+            guard (sourceCounts[lecture.sourceId] ?? 0) < sourceShare else { continue }
+            courseCounts[courseKey, default: 0] += 1
+            sourceCounts[lecture.sourceId, default: 0] += 1
+            toAppend.append(lecture)
+        }
+        shuffledLectures.append(contentsOf: toAppend)
     }
 
-    /// Filter valid lectures, deduplicate, shuffle, cap at feedLimit.
+    /// Stratified feed: proportionate source share → per-course cap → weighted shuffle.
+    ///
+    /// Each enabled source gets an equal base share of the feed (`feedLimit / sourceCount`).
+    /// Within each source, no course contributes more than `maxPerCourse` lectures.
+    /// Leftover slots from small sources spill over to larger ones.
+    /// Final ordering uses Efraimidis-Spirakis weighted sampling so thumbs-up/down
+    /// bias which lectures appear when a source has more candidates than its share.
     static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>, feedPrefs: FeedPreferences) -> [Lecture] {
         let blocked = feedPrefs.blockedIds
-        return Array(lectures
+        let eligible = lectures
             .filter { $0.isFeedEligible && !blocked.contains($0.youtubeId) && enabledSources.contains($0.sourceId) }
             .uniqued(by: { $0.youtubeId.lowercased() })
-            .shuffled()
-            .prefix(feedLimit))
+
+        // Group by source, then apply per-course cap within each source
+        let bySource = Dictionary(grouping: eligible) { $0.sourceId }
+        var sourcePools: [String: [Lecture]] = [:]
+        for (sourceId, sourceLectures) in bySource {
+            let byCourse = Dictionary(grouping: sourceLectures) { $0.courseNumber }
+            var pool: [Lecture] = []
+            for (_, group) in byCourse {
+                pool.append(contentsOf: group.shuffled().prefix(maxPerCourse))
+            }
+            sourcePools[sourceId] = pool
+        }
+
+        // Fair share per source, then redistribute unused slots
+        let sourceCount = max(sourcePools.count, 1)
+        let baseShare = feedLimit / sourceCount
+        var result: [Lecture] = []
+        var overflow: [Lecture] = []
+
+        for (_, pool) in sourcePools {
+            let sorted = pool.weightedShuffle(using: feedPrefs)
+
+            result.append(contentsOf: sorted.prefix(baseShare))
+            if sorted.count > baseShare {
+                overflow.append(contentsOf: sorted.dropFirst(baseShare))
+            }
+        }
+
+        // Fill remaining slots from overflow (weighted shuffle across all sources)
+        let remaining = feedLimit - result.count
+        if remaining > 0 && !overflow.isEmpty {
+            let spillover = Array(overflow.weightedShuffle(using: feedPrefs).prefix(remaining))
+            result.append(contentsOf: spillover)
+        }
+
+        // Final shuffle so sources aren't grouped in blocks
+        result.shuffle()
+        return result
     }
 }
 

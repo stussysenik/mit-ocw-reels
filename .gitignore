@@ -28,6 +28,9 @@ Package.resolved
 # Superpowers
 .superpowers/
 
+# Environment files (API keys)
+.env*
+
 # Local tasks
 tasks/
 

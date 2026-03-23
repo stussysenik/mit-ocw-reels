@@ -31,3 +31,9 @@ struct SourceFilterSection: View {
         }
     }
 }
+
+#Preview {
+    Form {
+        SourceFilterSection(sourcePrefs: SourcePreferences.shared)
+    }
+}

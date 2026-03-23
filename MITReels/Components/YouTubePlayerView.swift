@@ -54,7 +54,9 @@ struct YouTubePlayerView: UIViewRepresentable {
 
         if context.coordinator.currentVideoId != videoId {
             context.coordinator.currentVideoId = videoId
-            DispatchQueue.main.async { self.isLoading = true; self.hasError = false }
+            // JS hidePlayer() hides the iframe immediately; defer binding update
+            // to avoid "Modifying state during view update" warnings.
+            DispatchQueue.main.async { [self] in isLoading = true; hasError = false }
             if let safeId = Self.sanitizedVideoId(videoId) {
                 let js = "loadVideo('\(safeId)','\(resolvedQuality)',\(autoplay),\(captionsEnabled))"
                 if WKWebViewPool.shared.isReady(webView) {

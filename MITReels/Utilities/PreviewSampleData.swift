@@ -109,5 +109,10 @@ struct PreviewSampleData {
     static var sampleCourse: Course {
         try! container.mainContext.fetch(FetchDescriptor<Course>()).first!
     }
+
+    static var sampleStanfordCourse: Course {
+        try! container.mainContext.fetch(FetchDescriptor<Course>())
+            .first(where: { $0.sourceId == "stanford" })!
+    }
 }
 #endif

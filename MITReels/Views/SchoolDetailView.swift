@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Per-school course browser with list/grid toggle, search, and department filter.
@@ -237,4 +238,14 @@ struct SchoolDetailView: View {
             .padding(.vertical, Spacing.sm)
         }
     }
+}
+
+#Preview {
+    NavigationStack {
+        SchoolDetailView(
+            school: .engineering,
+            courses: try! PreviewSampleData.container.mainContext.fetch(FetchDescriptor<Course>())
+        )
+    }
+    .modelContainer(PreviewSampleData.container)
 }

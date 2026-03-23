@@ -23,18 +23,26 @@ final class WKWebViewPool {
 
     /// Pre-creates pool WebViews and loads the YouTube IFrame Player API HTML.
     /// Call once during app init, after URLCache is configured.
+    /// First WebView created immediately; rest staggered 1s apart to avoid
+    /// thundering herd of WebContent processes at launch.
     func warmUp() {
-        for _ in 0..<poolSize {
-            let webView = makeWebView()
-            webView.navigationDelegate = poolNavDelegate
-            webView.loadHTMLString(Self.playerHTML, baseURL: URL(string: "https://mitreels.app"))
-            available.append(webView)
+        appendWarmWebView()
+        for delay in 1..<poolSize {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(Double(delay)))
+                appendWarmWebView()
+            }
         }
+    }
+
+    private func appendWarmWebView() {
+        let webView = makeLoadedWebView()
+        webView.navigationDelegate = poolNavDelegate
+        available.append(webView)
     }
 
     /// Check out a warm WebView from the pool. Prefers HTML-ready WebViews.
     func checkout() -> WKWebView? {
-        // Prefer a ready WebView so JS can execute immediately
         if let idx = available.lastIndex(where: { readySet.contains(ObjectIdentifier($0)) }) {
             let webView = available.remove(at: idx)
             inUse.insert(ObjectIdentifier(webView))
@@ -47,8 +55,7 @@ final class WKWebViewPool {
 
     /// Create a cold fallback when pool is exhausted (rare — fast scrolling).
     func createFallback() -> WKWebView {
-        let webView = makeWebView()
-        webView.loadHTMLString(Self.playerHTML, baseURL: URL(string: "https://mitreels.app"))
+        let webView = makeLoadedWebView()
         inUse.insert(ObjectIdentifier(webView))
         return webView
     }
@@ -59,9 +66,11 @@ final class WKWebViewPool {
     }
 
     /// Return a WebView to the pool after use.
+    /// Stops playback and clears the video frame so recycled views don't flash stale content.
     func checkin(_ webView: WKWebView) {
         guard inUse.remove(ObjectIdentifier(webView)) != nil else { return }
         webView.evaluateJavaScript("stopVideo()", completionHandler: nil)
+        webView.evaluateJavaScript("hidePlayer()", completionHandler: nil)
         webView.navigationDelegate = poolNavDelegate
         if available.count < poolSize {
             available.append(webView)
@@ -94,6 +103,12 @@ final class WKWebViewPool {
     }
 
     // MARK: - Factory
+
+    private func makeLoadedWebView() -> WKWebView {
+        let webView = makeWebView()
+        webView.loadHTMLString(Self.playerHTML, baseURL: URL(string: "https://mitreels.app"))
+        return webView
+    }
 
     private func makeWebView() -> WKWebView {
         let config = WKWebViewConfiguration()
@@ -163,6 +178,7 @@ final class WKWebViewPool {
                 },
                 'onStateChange': function(e) {
                     msg('state:' + e.data);
+                    if (e.data === 1 || e.data === 5) showPlayer();
                     if (e.data === 1) startTimePolling();
                     else if (e.data === 0 || e.data === 2) stopTimePolling();
                 },
@@ -185,6 +201,7 @@ final class WKWebViewPool {
     }
 
     function loadVideo(videoId, quality, autoplay, captions) {
+        hidePlayer(); /* Hide old frame immediately; showPlayer() fires on playing/cued */
         var o = {id:videoId, quality:quality, autoplay:!!autoplay, captions:!!captions};
         if (!player) {
             /* First video — create player with autoplay in playerVars (iOS native signal) */
@@ -196,6 +213,8 @@ final class WKWebViewPool {
         }
     }
 
+    function hidePlayer() { document.getElementById('player').style.visibility = 'hidden'; }
+    function showPlayer() { document.getElementById('player').style.visibility = 'visible'; }
     function playVideo()  { if (player && playerReady) player.playVideo(); }
     function pauseVideo() { if (player && playerReady) player.pauseVideo(); }
     function stopVideo()  { if (player && playerReady) { player.stopVideo(); stopTimePolling(); } }

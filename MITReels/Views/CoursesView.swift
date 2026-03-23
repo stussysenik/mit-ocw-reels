@@ -72,7 +72,7 @@ struct CoursesView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if cachedSchoolData.isEmpty {
+                if cachedSchoolData.isEmpty && cachedSourceData.isEmpty {
                     ContentUnavailableView(
                         "No Courses",
                         systemImage: "book.closed",

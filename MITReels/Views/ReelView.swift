@@ -176,6 +176,10 @@ struct ReelView: View {
         }
         .background(CarbonColor.reelBackground.ignoresSafeArea())
         .geometryGroup()
+        .onAppear {
+            // Trigger autoplay on initial appear (onChange won't fire if isVisible is already true)
+            if isVisible && autoplayEnabled { isPlaying = true }
+        }
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
             if !visible && !isNearby {
