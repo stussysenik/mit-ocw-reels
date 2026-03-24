@@ -9,6 +9,7 @@ import WebKit
 struct YouTubePlayerView: UIViewRepresentable {
     let videoId: String
     var autoplay: Bool = false
+    var isVisible: Bool = false
     var captionsEnabled: Bool = true
     @AppStorage("hdOnWifi") private var hdOnWifi = true
     @Binding var isLoading: Bool
@@ -35,6 +36,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.webView = webView
         context.coordinator.currentVideoId = videoId
+        context.coordinator.lastVisibleState = isVisible
 
         if let safeId = Self.sanitizedVideoId(videoId) {
             let js = "loadVideo('\(safeId)','\(resolvedQuality)',\(autoplay),\(captionsEnabled))"
@@ -45,6 +47,9 @@ struct YouTubePlayerView: UIViewRepresentable {
                 context.coordinator.pendingJS = js
                 // Timeout deferred to didFinish — don't count WebView process launch time
             }
+        }
+        if isVisible {
+            webView.evaluateJavaScript("setVisible(true)", completionHandler: nil)
         }
         return webView
     }
@@ -70,6 +75,11 @@ struct YouTubePlayerView: UIViewRepresentable {
             context.coordinator.lastPlayingState = isPlaying
             if isPlaying { context.coordinator.play() }
             else { context.coordinator.pause() }
+        }
+
+        if context.coordinator.lastVisibleState != isVisible {
+            context.coordinator.lastVisibleState = isVisible
+            webView.evaluateJavaScript("setVisible(\(isVisible))", completionHandler: nil)
         }
 
         if let seekTime = seekTo {
@@ -102,6 +112,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         weak var webView: WKWebView?
         var currentVideoId: String = ""
         var lastPlayingState: Bool = false
+        var lastVisibleState: Bool = false
         var isDismantled = false
         /// Deferred loadVideo() JS — fired when the WebView's HTML finishes loading.
         var pendingJS: String?
@@ -114,6 +125,7 @@ struct YouTubePlayerView: UIViewRepresentable {
         init(parent: YouTubePlayerView) {
             self.parent = parent
             self.currentVideoId = parent.videoId
+            self.lastVisibleState = parent.isVisible
         }
 
         // MARK: JS Bridge

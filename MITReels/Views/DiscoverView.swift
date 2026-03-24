@@ -74,7 +74,9 @@ struct DiscoverView: View {
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
-            // Defer preload updates to after scroll animation settles
+            // Prefetch thumbnails for nearby reels immediately (O(1) per call)
+            ThumbnailPrefetcher.shared.prefetch(lectures: shuffledLectures, currentId: visibleId)
+            // Defer WebView preload updates to after scroll animation settles
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
                 nextId = shuffledLectures.nextId(after: visibleId)
@@ -97,8 +99,9 @@ struct DiscoverView: View {
             withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            URLCache.shared.removeAllCachedResponses()
+            // Let URLCache and NSCache handle their own LRU eviction — don't nuke everything
             WKWebViewPool.shared.handleMemoryWarning()
+            ThumbnailPrefetcher.shared.handleMemoryWarning()
         }
         .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
             guard let videoId = note.object as? String else { return }
@@ -196,6 +199,7 @@ struct DiscoverView: View {
         let sources = sourcePrefs.enabledSourceIds
         shuffledLectures = Self.filterValidLectures(lectures, enabledSources: sources, feedPrefs: feedPrefs)
         lastBuiltSources = sources
+        ThumbnailPrefetcher.shared.warmUp(lectures: shuffledLectures)
     }
 
     /// Append newly-arrived lectures without reshuffling the existing feed.

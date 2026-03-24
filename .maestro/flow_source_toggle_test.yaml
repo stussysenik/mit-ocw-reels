@@ -1,0 +1,64 @@
+appId: com.mitreels.app
+---
+# Test: Source toggle affects Courses tab display and search
+# Warm launch — requires prior clearState run to seed the app.
+
+- launchApp
+
+# Wait for multi-source seed to complete
+- waitForAnimationToEnd:
+    timeout: 15000
+
+# Navigate to Courses tab
+- tapOn: "Courses"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: toggle_courses_top
+
+# Scroll down to see non-MIT sources
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: toggle_courses_scrolled
+
+# Scroll further to see more
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: toggle_courses_more_sources
+
+# Scroll all the way back to top
+- swipe:
+    direction: DOWN
+    duration: 500
+- swipe:
+    direction: DOWN
+    duration: 500
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Search for NVIDIA
+- tapOn: "Search courses or schools..."
+- inputText: "NVIDIA"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: toggle_nvidia_search
+
+# Clear search
+- tapOn: "Cancel"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Search for Verge — should be empty (removed from seed)
+- tapOn: "Search courses or schools..."
+- inputText: "Verge"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: toggle_verge_search_empty

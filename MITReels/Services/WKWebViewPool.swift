@@ -69,8 +69,7 @@ final class WKWebViewPool {
     /// Stops playback and clears the video frame so recycled views don't flash stale content.
     func checkin(_ webView: WKWebView) {
         guard inUse.remove(ObjectIdentifier(webView)) != nil else { return }
-        webView.evaluateJavaScript("stopVideo()", completionHandler: nil)
-        webView.evaluateJavaScript("hidePlayer()", completionHandler: nil)
+        webView.evaluateJavaScript("stopVideo();hidePlayer();setVisible(false)", completionHandler: nil)
         webView.navigationDelegate = poolNavDelegate
         if available.count < poolSize {
             available.append(webView)
@@ -137,8 +136,10 @@ final class WKWebViewPool {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
     * { margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
     #player { width: 100%; height: 100%; }
+    /* YouTube iframe inherits black bg — make transparent until video frame renders */
+    #player iframe { background: transparent !important; }
     </style>
     </head>
     <body>
@@ -153,6 +154,7 @@ final class WKWebViewPool {
     var playerReady = false;
     var pendingLoad = null;
     var timePoller = null;
+    var isViewVisible = false;
 
     function msg(s) {
         try { window.webkit.messageHandlers.ytEvent.postMessage(s); } catch(e) {}
@@ -178,7 +180,8 @@ final class WKWebViewPool {
                 },
                 'onStateChange': function(e) {
                     msg('state:' + e.data);
-                    if (e.data === 1 || e.data === 5) showPlayer();
+                    if (e.data === 1) showPlayer();
+                    else if (e.data === 5 && isViewVisible) showPlayer();
                     if (e.data === 1) startTimePolling();
                     else if (e.data === 0 || e.data === 2) stopTimePolling();
                 },
@@ -201,7 +204,8 @@ final class WKWebViewPool {
     }
 
     function loadVideo(videoId, quality, autoplay, captions) {
-        hidePlayer(); /* Hide old frame immediately; showPlayer() fires on playing/cued */
+        hidePlayer();
+        isViewVisible = false; /* Reset — Swift calls setVisible(true) when reel is visible */
         var o = {id:videoId, quality:quality, autoplay:!!autoplay, captions:!!captions};
         if (!player) {
             /* First video — create player with autoplay in playerVars (iOS native signal) */
@@ -230,6 +234,10 @@ final class WKWebViewPool {
     }
     function stopTimePolling() {
         if (timePoller) { clearInterval(timePoller); timePoller = null; }
+    }
+    function setVisible(flag) {
+        isViewVisible = !!flag;
+        if (isViewVisible && playerReady) showPlayer();
     }
     </script>
     </body>
