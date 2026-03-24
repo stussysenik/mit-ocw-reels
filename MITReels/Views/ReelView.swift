@@ -7,6 +7,8 @@ import SwiftUI
 struct ReelView: View {
     /// Posted after dislike animation — parent should advance to next reel.
     static let dislikeAdvanceNotification = Notification.Name("reelDislikeAdvance")
+    /// Posted after thumbs-up — parent should refresh engine weights.
+    static let likeNotification = Notification.Name("reelLike")
 
     let lecture: Lecture
 
@@ -128,6 +130,7 @@ struct ReelView: View {
                         iconButton("hand.thumbsup", filled: showLiked, activeColor: .green) {
                             haptic.impactOccurred()
                             FeedPreferences.shared.thumbsUp(sourceId: lecture.sourceId, topic: lecture.department)
+                            NotificationCenter.default.post(name: ReelView.likeNotification, object: lecture.youtubeId)
                             withAnimation(.easeOut(duration: 0.15)) { showLiked = true }
                             showToast("More like this")
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {

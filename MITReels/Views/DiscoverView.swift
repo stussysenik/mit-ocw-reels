@@ -7,12 +7,16 @@ import SwiftData
 /// snap-to-page. One scroll = one page. Haptic feedback on each page change.
 /// White background matches the NASA-inspired light aesthetic.
 ///
+/// Feed computation is fully off-loaded to a `FeedEngine` actor that maintains a
+/// probabilistic sliding-window buffer. Each batch of 10 items reflects the
+/// latest interaction weights — a thumbs-up at position 5 influences position 15.
+///
 /// Tapping the metadata line navigates to the full course lecture sequence.
 /// OCW links below each reel open the course page, syllabus, and readings.
 struct DiscoverView: View {
     @Query private var lectures: [Lecture]
 
-    @State private var shuffledLectures: [Lecture] = []
+    @State private var displayLectures: [Lecture] = []
     @SceneStorage("discoverVisibleId") private var visibleId: String?
     @State private var nextId: String?
     @State private var hasScrolled = false
@@ -21,6 +25,22 @@ struct DiscoverView: View {
     @State private var showSourceFilter = false
     @State private var rebuildTask: Task<Void, Never>?
     @State private var lastBuiltSources: Set<String> = []
+    @State private var feedEngine = FeedEngine()
+    /// Tracks when each reel became visible — used for soft signal (skip speed / long watch).
+    @State private var reelAppearTime: Date?
+
+    /// Map Lecture @Model objects to Sendable FeedItems for the actor boundary.
+    private var feedItems: [FeedItem] {
+        lectures.filter { $0.isFeedEligible }.map {
+            FeedItem(youtubeId: $0.youtubeId, sourceId: $0.sourceId,
+                     department: $0.department, courseNumber: $0.courseNumber)
+        }
+    }
+
+    /// Lookup table for mapping engine IDs back to Lecture objects for display.
+    private var lectureById: [String: Lecture] {
+        Dictionary(lectures.map { ($0.youtubeId, $0) }, uniquingKeysWith: { first, _ in first })
+    }
 
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
@@ -42,78 +62,128 @@ struct DiscoverView: View {
                     CourseReelsView(course: course, initialLectureId: navigateToLectureId)
                 }
             }
-            .sheet(isPresented: $showSourceFilter, onDismiss: rebuildFeed) {
+            .sheet(isPresented: $showSourceFilter, onDismiss: {
+                Task { await bootstrapEngine() }
+            }) {
                 sourceFilterSheet
             }
         }
         .onAppear {
             haptic.prepare()
-            if shuffledLectures.isEmpty && !lectures.isEmpty {
-                rebuildFeed()
+            if displayLectures.isEmpty && !lectures.isEmpty {
+                Task { await bootstrapEngine() }
             } else if sourcePrefs.enabledSourceIds != lastBuiltSources {
-                rebuildFeed()
+                Task { await bootstrapEngine() }
             }
-            // Covers nil (first launch) AND stale (relaunch with new shuffle)
-            if !shuffledLectures.isEmpty,
-               visibleId == nil || !shuffledLectures.contains(where: { $0.youtubeId == visibleId }) {
-                visibleId = shuffledLectures.first?.youtubeId
-            }
+            // syncDisplay() handles stale visibleId — no duplicate check needed here
         }
         .onChange(of: lectures.count) { old, n in
             guard n > old else { return }
-            // Large batch (multi-source seed) → full rebuild for proportionate sampling
-            if shuffledLectures.isEmpty || (n - old) > 100 { rebuildFeed() }
-            else { appendNewLectures() }
+            if displayLectures.isEmpty || (n - old) > 100 {
+                Task { await bootstrapEngine() }
+            } else {
+                Task {
+                    await feedEngine.updateItems(feedItems)
+                    await syncDisplay()
+                }
+            }
         }
         .onChange(of: sourcePrefs.enabledSourceIds) { _, _ in debouncedRebuildFeed() }
         .onChange(of: feedPrefs.blockedIds.count) { _, _ in debouncedRebuildFeed() }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { rebuildFeed() }
+            // Graceful resume: rebuild pools from current lectures but preserve
+            // buffer, history, and session-local soft adjustments.
+            if phase == .active {
+                Task {
+                    await feedEngine.updateItems(feedItems)
+                    await syncDisplay()
+                }
+            }
         }
         .onChange(of: visibleId) { old, new in
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
-            // Prefetch thumbnails for nearby reels immediately (O(1) per call)
-            ThumbnailPrefetcher.shared.prefetch(lectures: shuffledLectures, currentId: visibleId)
+
+            // Soft signal: measure time on previous reel
+            reportSoftSignal(oldId: old)
+            reelAppearTime = Date()
+
+            // Only advance the buffer when scrolling forward past history.
+            // Backward scrolls into history items should not consume buffer heads.
+            let oldIdx = old.flatMap { id in displayLectures.firstIndex(where: { $0.youtubeId == id }) }
+            let newIdx = new.flatMap { id in displayLectures.firstIndex(where: { $0.youtubeId == id }) }
+            let isForward = if let o = oldIdx, let n = newIdx { n > o } else { true }
+
+            if isForward {
+                Task {
+                    await feedEngine.advance()
+                    await syncDisplay()
+                }
+            }
+
+            // Prefetch thumbnails from engine's ahead-window
+            Task {
+                let ids = await feedEngine.prefetchIds(count: 6)
+                for id in ids {
+                    if ThumbnailPrefetcher.shared.cachedImage(for: id) == nil {
+                        _ = await ThumbnailPrefetcher.shared.fetchAndCache(videoId: id)
+                    }
+                }
+            }
+
             // Defer WebView preload updates to after scroll animation settles
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
-                nextId = shuffledLectures.nextId(after: visibleId)
+                nextId = displayLectures.nextId(after: new)
             }
         }
+        .modifier(ScrollVelocityModifier(feedEngine: feedEngine))
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
             haptic.impactOccurred()
             showSourceFilter = true
         }
         .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in
             guard let endedId = note.object as? String, endedId == visibleId,
-                  let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == endedId }),
-                  idx + 1 < shuffledLectures.count else { return }
-            withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
+                  let idx = displayLectures.firstIndex(where: { $0.youtubeId == endedId }),
+                  idx + 1 < displayLectures.count else { return }
+            withAnimation { visibleId = displayLectures[idx + 1].youtubeId }
         }
         .onReceive(NotificationCenter.default.publisher(for: ReelView.dislikeAdvanceNotification)) { note in
             guard let dislikedId = note.object as? String, dislikedId == visibleId,
-                  let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
-                  idx + 1 < shuffledLectures.count else { return }
-            withAnimation { visibleId = shuffledLectures[idx + 1].youtubeId }
+                  let idx = displayLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
+                  idx + 1 < displayLectures.count else { return }
+            // Capture next ID synchronously before async engine mutation changes the array.
+            let nextVideoId = displayLectures[idx + 1].youtubeId
+            withAnimation { visibleId = nextVideoId }
+            Task {
+                await feedEngine.blockVideo(id: dislikedId)
+                await feedEngine.refreshWeights(feedPrefs)
+                await syncDisplay()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ReelView.likeNotification)) { _ in
+            Task { await feedEngine.refreshWeights(feedPrefs) }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            // Let URLCache and NSCache handle their own LRU eviction — don't nuke everything
             WKWebViewPool.shared.handleMemoryWarning()
             ThumbnailPrefetcher.shared.handleMemoryWarning()
         }
         .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
             guard let videoId = note.object as? String else { return }
             if videoId == visibleId,
-               let idx = shuffledLectures.firstIndex(where: { $0.youtubeId == videoId }) {
-                let next = idx + 1 < shuffledLectures.count ? idx + 1
+               let idx = displayLectures.firstIndex(where: { $0.youtubeId == videoId }) {
+                let next = idx + 1 < displayLectures.count ? idx + 1
                          : idx - 1 >= 0 ? idx - 1 : nil
                 if let next {
-                    withAnimation { visibleId = shuffledLectures[next].youtubeId }
+                    withAnimation { visibleId = displayLectures[next].youtubeId }
                 }
             }
-            shuffledLectures.removeAll { $0.youtubeId == videoId }
+            // Route through engine so syncDisplay stays the single source of truth
+            Task {
+                await feedEngine.blockVideo(id: videoId)
+                await syncDisplay()
+            }
         }
     }
 
@@ -121,7 +191,7 @@ struct DiscoverView: View {
 
     @ViewBuilder
     private var feedContent: some View {
-        if shuffledLectures.isEmpty {
+        if displayLectures.isEmpty {
             VStack(spacing: Spacing.md) {
                 ProgressView()
                     .tint(CarbonColor.interactive)
@@ -134,7 +204,7 @@ struct DiscoverView: View {
         } else {
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
-                    ForEach(shuffledLectures, id: \.youtubeId) { lecture in
+                    ForEach(displayLectures, id: \.youtubeId) { lecture in
                         ReelView(
                             lecture: lecture,
                             isVisible: visibleId == lecture.youtubeId,
@@ -179,117 +249,75 @@ struct DiscoverView: View {
         .presentationDetents([.medium, .large])
     }
 
-    // MARK: - Helpers
+    // MARK: - Engine Integration
 
-    private static let feedLimit = 200
-    /// Max lectures from any single course in one feed — prevents large courses from dominating.
-    private static let maxPerCourse = 3
+    private func bootstrapEngine() async {
+        guard !lectures.isEmpty else { return }
+        await feedEngine.bootstrap(
+            items: feedItems,
+            feedPrefs: feedPrefs,
+            sourcePrefs: sourcePrefs
+        )
+        await syncDisplay()
+        lastBuiltSources = sourcePrefs.enabledSourceIds
+    }
+
+    /// Pull the engine's display window (ID list) and map back to Lecture objects.
+    @MainActor
+    private func syncDisplay() async {
+        let windowIds = await feedEngine.displayWindow
+        let lookup = lectureById
+        displayLectures = windowIds.compactMap { lookup[$0] }
+        // Warm thumbnails using engine's ahead-window (O(1) per ID, no index search)
+        let prefetchIds = await feedEngine.prefetchIds(count: 6)
+        ThumbnailPrefetcher.shared.prefetchByIds(prefetchIds)
+        // Fix visibleId if stale
+        if !displayLectures.isEmpty,
+           visibleId == nil || !displayLectures.contains(where: { $0.youtubeId == visibleId }) {
+            visibleId = displayLectures.first?.youtubeId
+        }
+    }
 
     private func debouncedRebuildFeed() {
         rebuildTask?.cancel()
         rebuildTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }
-            rebuildFeed()
+            await bootstrapEngine()
         }
     }
 
-    private func rebuildFeed() {
-        guard !lectures.isEmpty else { return }
-        let sources = sourcePrefs.enabledSourceIds
-        shuffledLectures = Self.filterValidLectures(lectures, enabledSources: sources, feedPrefs: feedPrefs)
-        lastBuiltSources = sources
-        ThumbnailPrefetcher.shared.warmUp(lectures: shuffledLectures)
+    /// Report soft signal based on how long the user viewed the previous reel.
+    private func reportSoftSignal(oldId: String?) {
+        guard let oldId, let appear = reelAppearTime,
+              let lecture = displayLectures.first(where: { $0.youtubeId == oldId }) else { return }
+        let elapsed = Date().timeIntervalSince(appear)
+        let interaction: FeedInteraction? = elapsed < 1.5 ? .fastSkip : elapsed > 30 ? .longWatch : nil
+        if let interaction {
+            Task { await feedEngine.recordInteraction(interaction, sourceId: lecture.sourceId, department: lecture.department) }
+        }
     }
+}
 
-    /// Append newly-arrived lectures without reshuffling the existing feed.
-    /// Respects per-course and per-source diversity against existing content.
-    private func appendNewLectures() {
-        let existing = Set(shuffledLectures.map { $0.youtubeId.lowercased() })
-        let blocked = feedPrefs.blockedIds
-        let enabled = sourcePrefs.enabledSourceIds
+// MARK: - Velocity Detection (iOS 18+)
 
-        // Track current counts per course and source
-        var courseCounts: [String: Int] = [:]
-        var sourceCounts: [String: Int] = [:]
-        for lecture in shuffledLectures {
-            courseCounts["\(lecture.sourceId)_\(lecture.courseNumber)", default: 0] += 1
-            sourceCounts[lecture.sourceId, default: 0] += 1
-        }
-        let sourceShare = Self.feedLimit / max(enabled.count, 1)
+/// Bridges the iOS 18 `onScrollPhaseChange` API to `FeedEngine.updateVelocity`.
+/// On iOS 17, velocity detection is unavailable — the engine uses its default depth.
+private struct ScrollVelocityModifier: ViewModifier {
+    let feedEngine: FeedEngine
 
-        var fresh = lectures.filter {
-            $0.isFeedEligible
-            && !existing.contains($0.youtubeId.lowercased())
-            && !blocked.contains($0.youtubeId)
-            && enabled.contains($0.sourceId)
-        }
-        guard !fresh.isEmpty, shuffledLectures.count < Self.feedLimit else { return }
-        fresh.shuffle()
-
-        var toAppend: [Lecture] = []
-        for lecture in fresh {
-            guard toAppend.count + shuffledLectures.count < Self.feedLimit else { break }
-            let courseKey = "\(lecture.sourceId)_\(lecture.courseNumber)"
-            guard (courseCounts[courseKey] ?? 0) < Self.maxPerCourse else { continue }
-            guard (sourceCounts[lecture.sourceId] ?? 0) < sourceShare else { continue }
-            courseCounts[courseKey, default: 0] += 1
-            sourceCounts[lecture.sourceId, default: 0] += 1
-            toAppend.append(lecture)
-        }
-        shuffledLectures.append(contentsOf: toAppend)
-    }
-
-    /// Stratified feed: proportionate source share → per-course cap → weighted shuffle.
-    ///
-    /// Each enabled source gets an equal base share of the feed (`feedLimit / sourceCount`).
-    /// Within each source, no course contributes more than `maxPerCourse` lectures.
-    /// Leftover slots from small sources spill over to larger ones.
-    /// Final ordering uses Efraimidis-Spirakis weighted sampling so thumbs-up/down
-    /// bias which lectures appear when a source has more candidates than its share.
-    static func filterValidLectures(_ lectures: [Lecture], enabledSources: Set<String>, feedPrefs: FeedPreferences) -> [Lecture] {
-        let blocked = feedPrefs.blockedIds
-        let eligible = lectures
-            .filter { $0.isFeedEligible && !blocked.contains($0.youtubeId) && enabledSources.contains($0.sourceId) }
-            .uniqued(by: { $0.youtubeId.lowercased() })
-
-        // Group by source, then apply per-course cap within each source
-        let bySource = Dictionary(grouping: eligible) { $0.sourceId }
-        var sourcePools: [String: [Lecture]] = [:]
-        for (sourceId, sourceLectures) in bySource {
-            let byCourse = Dictionary(grouping: sourceLectures) { $0.courseNumber }
-            var pool: [Lecture] = []
-            for (_, group) in byCourse {
-                pool.append(contentsOf: group.shuffled().prefix(maxPerCourse))
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollPhaseChange { _, newPhase, context in
+                if newPhase == .decelerating, let v = context.velocity {
+                    Task { await feedEngine.updateVelocity(v.dy) }
+                } else if newPhase == .idle {
+                    Task { await feedEngine.updateVelocity(0) }
+                }
             }
-            sourcePools[sourceId] = pool
+        } else {
+            content
         }
-
-        // Fair share per source, then redistribute unused slots
-        let sourceCount = max(sourcePools.count, 1)
-        let baseShare = feedLimit / sourceCount
-        var result: [Lecture] = []
-        var overflow: [Lecture] = []
-
-        for (_, pool) in sourcePools {
-            let sorted = pool.weightedShuffle(using: feedPrefs)
-
-            result.append(contentsOf: sorted.prefix(baseShare))
-            if sorted.count > baseShare {
-                overflow.append(contentsOf: sorted.dropFirst(baseShare))
-            }
-        }
-
-        // Fill remaining slots from overflow (weighted shuffle across all sources)
-        let remaining = feedLimit - result.count
-        if remaining > 0 && !overflow.isEmpty {
-            let spillover = Array(overflow.weightedShuffle(using: feedPrefs).prefix(remaining))
-            result.append(contentsOf: spillover)
-        }
-
-        // Final shuffle so sources aren't grouped in blocks
-        result.shuffle()
-        return result
     }
 }
 

@@ -85,6 +85,27 @@ final class ThumbnailPrefetcher {
         }
     }
 
+    /// Prefetch thumbnails by ID list — O(1) per ID, no index search.
+    /// Used by FeedEngine integration where the engine provides exact IDs.
+    func prefetchByIds(_ ids: [String]) {
+        let windowIds = Set(ids)
+        // Cancel tasks that fell outside the window
+        for (videoId, task) in inFlight where !windowIds.contains(videoId) {
+            task.cancel()
+            inFlight.removeValue(forKey: videoId)
+        }
+        // Start new fetches for uncached IDs
+        for videoId in windowIds {
+            guard imageCache.object(forKey: videoId as NSString) == nil,
+                  inFlight[videoId] == nil else { continue }
+            inFlight[videoId] = Task { [weak self] in
+                guard let self else { return }
+                _ = await self.fetchAndCache(videoId: videoId)
+                self.inFlight.removeValue(forKey: videoId)
+            }
+        }
+    }
+
     /// Warm the first N thumbnails on feed build — ensures instant display on launch.
     func warmUp(lectures: [Lecture]) {
         prefetch(lectures: lectures, currentId: lectures.first?.youtubeId)

@@ -1,5 +1,17 @@
 import Foundation
 
+/// Immutable snapshot of feed weights — copied once per batch to avoid repeated UserDefaults reads.
+/// Lives alongside `FeedPreferences` which produces it via `snapshot()`.
+struct WeightSnapshot: Sendable {
+    let sourceWeights: [String: Double]
+    let topicWeights: [String: Double]
+    let blockedIds: Set<String>
+
+    func weight(sourceId: String, topic: String) -> Double {
+        (sourceWeights[sourceId] ?? 1.0) * (topicWeights[topic] ?? 1.0)
+    }
+}
+
 /// Local feed recommendation engine — tracks thumbs-up/down signals to weight
 /// source and topic preferences. Weights bias the Discovery feed's random sampling.
 ///
@@ -94,6 +106,18 @@ final class FeedPreferences: ObservableObject {
 
     var adjustedTopicWeights: [(id: String, weight: Double)] {
         topicWeights.filter { abs($0.value - 1.0) > 0.01 }.map { ($0.key, $0.value) }.sorted { $0.1 > $1.1 }
+    }
+
+    // MARK: - Snapshot
+
+    /// Immutable copy of current weights for off-main-thread batch computation.
+    /// Avoids N×UserDefaults reads per weighted shuffle — snapshot once, use many.
+    func snapshot() -> WeightSnapshot {
+        WeightSnapshot(
+            sourceWeights: sourceWeights,
+            topicWeights: topicWeights,
+            blockedIds: blockedIds
+        )
     }
 
     // MARK: - Private

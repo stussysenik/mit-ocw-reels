@@ -5,7 +5,7 @@ import SwiftData
 /// Tests for OCW slug parsing and lecture filtering logic.
 struct OCWScraperTests {
 
-    // MARK: - Lecture Filtering
+    // MARK: - Lecture Feed Eligibility
 
     @MainActor
     private func makeContainer() throws -> ModelContainer {
@@ -13,83 +13,69 @@ struct OCWScraperTests {
         return try ModelContainer(for: Course.self, Lecture.self, configurations: config)
     }
 
-    @Test @MainActor func filterValidLectures_excludesPDFs() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        let pdfLecture = Lecture(
-            title: "decomposers.pdf",
-            youtubeId: "abc123def45",
-            courseNumber: "12.000",
-            courseName: "Solving Complex Problems",
-            department: "EAPS"
-        )
-        let validLecture = Lecture(
-            title: "Introduction to Algorithms",
-            youtubeId: "HtSuA80QTyo",
-            courseNumber: "6.006",
-            courseName: "Introduction to Algorithms",
-            department: "EECS"
-        )
-        context.insert(pdfLecture)
-        context.insert(validLecture)
-
-        let all = [pdfLecture, validLecture]
-        let filtered = DiscoverView.filterValidLectures(all, enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
-
-        #expect(filtered.count == 1)
-        #expect(filtered.first?.title == "Introduction to Algorithms")
+    private func validatedLecture(
+        title: String, youtubeId: String, courseNumber: String,
+        courseName: String, department: String
+    ) -> Lecture {
+        let l = Lecture(title: title, youtubeId: youtubeId, courseNumber: courseNumber,
+                        courseName: courseName, department: department)
+        l.isValidated = true
+        return l
     }
 
-    @Test @MainActor func filterValidLectures_excludesEmptyYoutubeId() throws {
+    @Test @MainActor func isFeedEligible_excludesPDFs() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
-        let emptyIdLecture = Lecture(
-            title: "Some Lecture",
-            youtubeId: "",
-            courseNumber: "6.006",
-            courseName: "Intro to Algorithms",
-            department: "EECS"
+        let pdf = validatedLecture(
+            title: "decomposers.pdf", youtubeId: "abc123def45",
+            courseNumber: "12.000", courseName: "Solving Complex Problems", department: "EAPS"
         )
-        context.insert(emptyIdLecture)
+        context.insert(pdf)
+        #expect(!pdf.isFeedEligible)
 
-        let filtered = DiscoverView.filterValidLectures([emptyIdLecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
-        #expect(filtered.isEmpty)
+        let valid = validatedLecture(
+            title: "Introduction to Algorithms", youtubeId: "HtSuA80QTyo",
+            courseNumber: "6.006", courseName: "Introduction to Algorithms", department: "EECS"
+        )
+        context.insert(valid)
+        #expect(valid.isFeedEligible)
     }
 
-    @Test @MainActor func filterValidLectures_excludesEmptyCourseNumber() throws {
+    @Test @MainActor func isFeedEligible_excludesEmptyYoutubeId() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
-        let orphanLecture = Lecture(
-            title: "Orphan Lecture",
-            youtubeId: "abc123def45",
-            courseNumber: "",
-            courseName: "Unknown Course",
-            department: ""
-        )
-        context.insert(orphanLecture)
-
-        let filtered = DiscoverView.filterValidLectures([orphanLecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
-        #expect(filtered.isEmpty)
-    }
-
-    @Test @MainActor func filterValidLectures_keepsValidLectures() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-
-        let lecture = Lecture(
-            title: "Geometry of Linear Equations",
-            youtubeId: "J7DzL2_Na80",
-            courseNumber: "18.06",
-            courseName: "Linear Algebra",
-            department: "Mathematics"
+        let lecture = validatedLecture(
+            title: "Some Lecture", youtubeId: "",
+            courseNumber: "6.006", courseName: "Intro to Algorithms", department: "EECS"
         )
         context.insert(lecture)
+        #expect(!lecture.isFeedEligible)
+    }
 
-        let filtered = DiscoverView.filterValidLectures([lecture], enabledSources: ["mit"], feedPrefs: FeedPreferences.shared)
-        #expect(filtered.count == 1)
+    @Test @MainActor func isFeedEligible_excludesEmptyCourseNumber() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let lecture = validatedLecture(
+            title: "Orphan Lecture", youtubeId: "abc123def45",
+            courseNumber: "", courseName: "Unknown Course", department: ""
+        )
+        context.insert(lecture)
+        #expect(!lecture.isFeedEligible)
+    }
+
+    @Test @MainActor func isFeedEligible_keepsValidLectures() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let lecture = validatedLecture(
+            title: "Geometry of Linear Equations", youtubeId: "J7DzL2_Na80",
+            courseNumber: "18.06", courseName: "Linear Algebra", department: "Mathematics"
+        )
+        context.insert(lecture)
+        #expect(lecture.isFeedEligible)
     }
 
     // MARK: - Display Label Logic

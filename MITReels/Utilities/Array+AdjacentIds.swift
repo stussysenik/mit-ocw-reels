@@ -8,11 +8,17 @@ extension Array where Element == Lecture {
               idx + 1 < count else { return nil }
         return self[idx + 1].youtubeId
     }
+}
 
-    /// Weighted shuffle using Efraimidis-Spirakis reservoir sampling.
-    /// Higher-weighted lectures are more likely to appear earlier.
-    @MainActor func weightedShuffle(using prefs: FeedPreferences) -> [Element] {
-        map { ($0, pow(Double.random(in: 0.001...1.0), 1.0 / prefs.weight(for: $0.sourceId, topic: $0.department))) }
+extension Sequence {
+    /// Efraimidis-Spirakis weighted shuffle — higher-weighted elements appear earlier.
+    /// The `weight` closure returns a raw weight; values are clamped to [0.1, 3.0].
+    func weightedShuffle(by weight: (Element) -> Double) -> [Element] {
+        map { elem in
+            let w = Swift.min(3.0, Swift.max(0.1, weight(elem)))
+            let key = pow(Double.random(in: 0.001...1.0), 1.0 / w)
+            return (elem, key)
+        }
         .sorted { $0.1 > $1.1 }
         .map(\.0)
     }
