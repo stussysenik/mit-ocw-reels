@@ -1,0 +1,62 @@
+appId: com.mitreels.app
+---
+# Autoplay OFF + stress: hammers the setVisible() bridge for cued-only path.
+# If player shows black instead of YouTube controls at ANY point, fix is broken.
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd: { timeout: 8000 }
+
+# Disable autoplay via settings
+- tapOn: "Courses"
+- waitForAnimationToEnd: { timeout: 2000 }
+- tapOn: { id: "settingsButton" }
+- waitForAnimationToEnd: { timeout: 1000 }
+- tapOn: { id: "autoplayToggle" }
+- waitForAnimationToEnd
+- tapOn: "Done"
+# Wait for Settings sheet to fully dismiss before tapping tab bar
+- waitForAnimationToEnd: { timeout: 3000 }
+
+# Back to Discover
+- tapOn: "Discover"
+- waitForAnimationToEnd: { timeout: 8000 }
+- takeScreenshot: autoplay_off_reel_1
+
+# Normal scrolling (5 swipes)
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_reel_2
+
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_reel_3
+
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_reel_6
+
+# Fast burst (5 swipes @ 200ms)
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_after_burst
+
+# Reverse (3 swipes DOWN)
+- swipe: { direction: DOWN, duration: 300 }
+- swipe: { direction: DOWN, duration: 300 }
+- swipe: { direction: DOWN, duration: 300 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_after_reverse
+
+# Final settle
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: autoplay_off_final

@@ -61,6 +61,7 @@ struct CourseReelsView: View {
             cachedLectures = (course.lectures ?? [])
                 .filter { $0.isFeedEligible }
                 .uniqued(by: { $0.youtubeId.lowercased() })
+            ThumbnailPrefetcher.shared.warmUp(lectures: cachedLectures)
             if let initialId = initialLectureId, visibleId == nil {
                 visibleId = initialId
             }
@@ -69,10 +70,11 @@ struct CourseReelsView: View {
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
+            ThumbnailPrefetcher.shared.prefetch(lectures: cachedLectures, currentId: visibleId)
             // Capture @State values before entering async Task to avoid Binding resolution
             let lectures = cachedLectures
             let vid = visibleId
-            // Defer preload updates to after scroll animation settles
+            // Defer WebView preload updates to after scroll animation settles
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
                 nextId = lectures.nextId(after: vid)

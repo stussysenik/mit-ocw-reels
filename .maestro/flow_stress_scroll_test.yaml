@@ -1,0 +1,118 @@
+appId: com.mitreels.app
+---
+# THE GAUNTLET: 50+ swipes across 7 phases to break the pool/visibility system.
+# If reel 50 looks as clean as reel 1, the fix is O(1) correct.
+
+- launchApp:
+    clearState: true
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 1: WARM-UP (5 swipes @ 500ms) — baseline behavior
+# ═══════════════════════════════════════════════════════════
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: gauntlet_phase1_start
+
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: gauntlet_phase1_end
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 2: MACHINE-GUN (10 swipes @ 100ms) — exhaust pool
+# Pool size=3 cannot keep up. Forces fallback creation + max recycling.
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase2_machinegun
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 3: RECOVERY (3 swipes @ 800ms) — pool self-heals?
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 800 }
+- waitForAnimationToEnd: { timeout: 4000 }
+- swipe: { direction: UP, duration: 800 }
+- waitForAnimationToEnd: { timeout: 4000 }
+- swipe: { direction: UP, duration: 800 }
+- waitForAnimationToEnd: { timeout: 4000 }
+- takeScreenshot: gauntlet_phase3_recovery
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 4: REVERSE BURST (5 swipes DOWN @ 200ms)
+# Scroll backward — re-checkout just-returned WebViews
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: DOWN, duration: 200 }
+- swipe: { direction: DOWN, duration: 200 }
+- swipe: { direction: DOWN, duration: 200 }
+- swipe: { direction: DOWN, duration: 200 }
+- swipe: { direction: DOWN, duration: 200 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase4_reverse
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 5: FORWARD AGAIN (5 swipes UP @ 200ms)
+# Rapid direction change — stale state from reversed WebViews?
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- swipe: { direction: UP, duration: 200 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase5_forward
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 6: SUSTAINED SPRINT (20 swipes @ 300ms)
+# Long sustained pressure — memory, pool rotation, 20 consecutive recyclings
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: gauntlet_phase6_mid_sprint
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- swipe: { direction: UP, duration: 300 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase6_end_sprint
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 7: FINAL SETTLE (2 swipes @ 500ms)
+# If this looks clean, the fix is O(1) — reel 50 = reel 1
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase7_settle_1
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: gauntlet_phase7_settle_2

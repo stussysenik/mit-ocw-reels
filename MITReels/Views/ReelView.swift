@@ -31,6 +31,9 @@ struct ReelView: View {
 
     @State private var isVideoLoading = true
     @State private var hasVideoError = false
+    /// Delayed flag — true only after the WebView has had time to paint its first frame.
+    /// Prevents flash of black iframe background between "loading done" and "frame rendered".
+    @State private var showVideoLayer = false
     @State private var showLiked = false
     @State private var showDisliked = false
     @State private var toastText: String?
@@ -131,6 +134,7 @@ struct ReelView: View {
                                 withAnimation { self.showLiked = false }
                             }
                         }
+                        .accessibilityIdentifier("thumbsUpButton")
                         iconButton("hand.thumbsdown", filled: showDisliked, activeColor: CarbonColor.interactive) {
                             FeedPreferences.shared.thumbsDown(videoId: lecture.youtubeId, sourceId: lecture.sourceId, topic: lecture.department)
                             withAnimation(.easeOut(duration: 0.15)) { showDisliked = true }
@@ -143,6 +147,7 @@ struct ReelView: View {
                                 NotificationCenter.default.post(name: ReelView.dislikeAdvanceNotification, object: lecture.youtubeId)
                             }
                         }
+                        .accessibilityIdentifier("thumbsDownButton")
                     }
 
                     if onViewCourse != nil {
@@ -189,11 +194,14 @@ struct ReelView: View {
         }
         .onChange(of: isVisible) { _, visible in
             isPlaying = visible && autoplayEnabled
-            if !visible && !isNearby {
-                isVideoLoading = true
-                hasVideoError = false
-                currentTime = 0
-                duration = 0
+            if !visible {
+                showVideoLayer = false
+                if !isNearby {
+                    isVideoLoading = true
+                    hasVideoError = false
+                    currentTime = 0
+                    duration = 0
+                }
             }
         }
     }
@@ -250,7 +258,7 @@ struct ReelView: View {
     private var videoPlayer: some View {
         ZStack(alignment: .bottom) {
             ZStack(alignment: .topTrailing) {
-                YouTubeThumbnailView(videoId: lecture.youtubeId)
+                CachedThumbnailView(videoId: lecture.youtubeId)
                     .overlay {
                         if isVisible && isVideoLoading && !hasVideoError {
                             ShimmerView()
@@ -262,6 +270,7 @@ struct ReelView: View {
                     YouTubePlayerView(
                         videoId: lecture.youtubeId,
                         autoplay: isVisible && autoplayEnabled,
+                        isVisible: isVisible,
                         captionsEnabled: captionsEnabled,
                         isLoading: $isVideoLoading,
                         hasError: $hasVideoError,
@@ -270,8 +279,26 @@ struct ReelView: View {
                         isPlaying: $isPlaying,
                         seekTo: $seekTarget
                     )
-                    .opacity(isVisible && !(isVideoLoading && !hasVideoError) ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.4), value: isVideoLoading)
+                    .compositingGroup()
+                    .opacity(isVisible && showVideoLayer ? 1 : 0)
+                    .onChange(of: isPlaying) { _, playing in
+                        // Playing guarantees a visible frame — reveal immediately.
+                        if playing && isVisible { showVideoLayer = true }
+                        if !playing && !isVisible { showVideoLayer = false }
+                    }
+                    .onChange(of: isVideoLoading) { _, loading in
+                        if loading { showVideoLayer = false }
+                        // Only auto-reveal when loading finishes AND autoplay is on.
+                        // For autoplay-off, the iframe shows a black spinner until
+                        // the user taps play — keep showing the thumbnail instead.
+                        if !loading && !hasVideoError && isVisible && autoplayEnabled {
+                            Task { @MainActor in
+                                try? await Task.sleep(for: .milliseconds(150))
+                                guard isVisible, !showVideoLayer else { return }
+                                withAnimation(.easeIn(duration: 0.15)) { showVideoLayer = true }
+                            }
+                        }
+                    }
                 }
 
                 if hasVideoError {

@@ -1,0 +1,46 @@
+appId: com.mitreels.app
+---
+# Test: With autoplay OFF, visible reel should still show YouTube player controls
+# Verifies setVisible(true) is called even when autoplay=false
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 8000
+
+# Navigate to settings and disable autoplay
+- tapOn: "Courses"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "settingsButton"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "autoplayToggle"
+- waitForAnimationToEnd
+- tapOn: "Done"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Switch back to Discover tab
+- tapOn: "Discover"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: autoplay_off_reel_1
+
+# Swipe to next reel — should show YouTube player with play button, not black
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: autoplay_off_reel_2
+
+# Swipe to reel 3
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: autoplay_off_reel_3

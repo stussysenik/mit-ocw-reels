@@ -1,0 +1,58 @@
+appId: com.mitreels.app
+---
+# WHIPLASH: Alternates UP/DOWN every swipe for 20 swipes @ 100ms.
+# Worst case: WebView checked in → immediately checked out → checked in → ...
+# Pool (size=3) gets hammered with checkout/checkin thrash.
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd: { timeout: 10000 }
+- takeScreenshot: whiplash_start
+
+# Round 1: 4 direction changes
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: whiplash_round1
+
+# Round 2: 4 more
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: whiplash_round2
+
+# Round 3: 4 more
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: whiplash_round3
+
+# Round 4: 4 more
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: whiplash_round4
+
+# Round 5: 4 more (total: 20)
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- swipe: { direction: UP, duration: 100 }
+- swipe: { direction: DOWN, duration: 100 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: whiplash_round5
+
+# Settle: scroll forward normally to prove system is stable
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: whiplash_settle_1
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- takeScreenshot: whiplash_settle_2

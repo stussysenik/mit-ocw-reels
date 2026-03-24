@@ -1,0 +1,74 @@
+appId: com.mitreels.app
+---
+# Test: Preloaded video should NOT render visibly during scroll
+# Verifies fix for video-ahead leak-through bug.
+# Screenshots at post-settle should show clean content — no ghosting from next reel.
+
+- launchApp:
+    clearState: true
+
+# Wait for first reel + YouTube IFrame API to initialize
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: preload_reel_1_settled
+
+# Swipe to reel 2
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_reel_2_settled
+
+# Swipe to reel 3
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_reel_3_settled
+
+# Swipe to reel 4
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_reel_4_settled
+
+# Swipe to reel 5
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_reel_5_settled
+
+# --- Fast scroll burst: 3 rapid swipes with short waits ---
+# Tests pool recycling under pressure — no stale frames should appear.
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd:
+    timeout: 1000
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd:
+    timeout: 1000
+- swipe:
+    direction: UP
+    duration: 300
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_after_fast_scroll
+
+# Wait for preloaded video to settle, then one more swipe
+- waitForAnimationToEnd:
+    timeout: 5000
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: preload_reel_post_burst

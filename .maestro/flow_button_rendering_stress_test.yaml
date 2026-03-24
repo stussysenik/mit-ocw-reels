@@ -1,0 +1,128 @@
+appId: com.mitreels.app
+---
+# BUTTON STRESS: Hammers like/dislike buttons by accessibility ID, interleaved with scrolling.
+# Tests toast rendering, button state resets, dislike-advance, and UI stability under rapid taps.
+
+- launchApp:
+    clearState: true
+# Wait for feed to load and thumbsUp button to be accessible
+- extendedWaitUntil:
+    visible:
+      id: "thumbsUpButton"
+    timeout: 15000
+- takeScreenshot: btn_initial
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 1: Like button spam (5 rapid taps on same reel)
+# Tests: toast appears, button animates, no crash on repeated taps
+# ═══════════════════════════════════════════════════════════
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- takeScreenshot: btn_like_1
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 500 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 500 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 500 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- takeScreenshot: btn_like_spam
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 2: Dislike → auto-advance (should move to next reel)
+# Tests: dislike triggers advance notification, new reel renders clean
+# ═══════════════════════════════════════════════════════════
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_dislike_advance_1
+
+# Dislike again on the new reel → advance again
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_dislike_advance_2
+
+# And again — 3 consecutive dislike-advances
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_dislike_advance_3
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 3: Interleaved scroll + button taps
+# Tests: button state doesn't leak between reels after scroll
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 500 }
+
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 3000 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 500 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_interleave_done
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 4: Rapid fire — alternating like/dislike at max speed
+# Tests: no crash, no stuck toast, no stale button state
+# ═══════════════════════════════════════════════════════════
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_rapid_fire_done
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 5: Tab switch under button state + return
+# Tests: button state and toast don't persist across tab switch
+# ═══════════════════════════════════════════════════════════
+- tapOn: { id: "thumbsUpButton" }
+- tapOn: "Courses"
+- waitForAnimationToEnd: { timeout: 2000 }
+- takeScreenshot: btn_courses_after_like
+- tapOn: "Discover"
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_discover_after_tab_switch
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 6: Scroll + dislike burst (5 dislike-advances as fast as possible)
+# Tests: 5 consecutive reel advances via dislike at max speed
+# ═══════════════════════════════════════════════════════════
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 1500 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 1500 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 1500 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 1500 }
+- tapOn: { id: "thumbsDownButton" }
+- waitForAnimationToEnd: { timeout: 3000 }
+- takeScreenshot: btn_dislike_burst_done
+
+# ═══════════════════════════════════════════════════════════
+# PHASE 7: Final settle — swipe 2 more + like to verify clean state
+# ═══════════════════════════════════════════════════════════
+- swipe: { direction: UP, duration: 500 }
+- waitForAnimationToEnd: { timeout: 5000 }
+- tapOn: { id: "thumbsUpButton" }
+- waitForAnimationToEnd: { timeout: 2000 }
+- takeScreenshot: btn_final_clean
