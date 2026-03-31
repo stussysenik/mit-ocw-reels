@@ -1,5 +1,8 @@
 # MIT Reels
 
+![Demo](demo.gif)
+
+
 A native iOS app that turns the world's best university lectures into a TikTok-style vertical video feed. Browse 7,000+ lectures from MIT, Stanford, Harvard, Yale, and 50+ educational sources — all in one swipe.
 
 Built with SwiftUI + SwiftData. Zero external dependencies. Designed for clarity.
