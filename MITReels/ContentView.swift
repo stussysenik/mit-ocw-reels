@@ -24,14 +24,6 @@ struct ContentView: View {
         }
         .tint(CarbonColor.interactive)
         .preferredColorScheme(.light)
-        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
-            guard let videoId = note.object as? String else { return }
-            let descriptor = FetchDescriptor<Lecture>(predicate: #Predicate { $0.youtubeId == videoId })
-            if let lecture = try? modelContext.fetch(descriptor).first {
-                modelContext.delete(lecture)
-                try? modelContext.save()
-            }
-        }
     }
 }
 

@@ -21,7 +21,6 @@ struct DiscoverView: View {
     /// Bridge between SlidingLoop's Int binding and the String-keyed app state.
     /// visibleId remains the persisted source of truth; visibleIndex is derived.
     @State private var visibleIndex: Int = 0
-    @State private var nextId: String?
     @State private var hasScrolled = false
     @State private var navigateToCourse: Course?
     @State private var navigateToLectureId: String?
@@ -138,11 +137,10 @@ struct DiscoverView: View {
             )
             ThumbnailPrefetcher.shared.prefetchByIds(windowIds)
 
-            // Defer WebView preload updates to after scroll animation settles
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
-                nextId = displayLectures.nextId(after: new)
-            }
+            // Drive the zero-wait player pool — rotates the ±2 warm window
+            // so the new center is always ready and the new edges begin
+            // decoding first-frame before the user reaches them.
+            ReelPlayerPool.shared.shift(toCenterIndex: currentIndex, in: displayLectures)
         }
         .onChange(of: visibleIndex) { _, new in
             guard new >= 0, new < displayLectures.count else { return }
@@ -166,7 +164,7 @@ struct DiscoverView: View {
             haptic.impactOccurred()
             showSourceFilter = true
         }
-        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in
+        .onReceive(NotificationCenter.default.publisher(for: .reelPlayerPoolVideoEnded)) { note in
             guard let endedId = note.object as? String, endedId == visibleId,
                   let idx = displayLectures.firstIndex(where: { $0.youtubeId == endedId }),
                   idx + 1 < displayLectures.count else { return }
@@ -188,24 +186,8 @@ struct DiscoverView: View {
             Task { await feedEngine.refreshWeights(feedPrefs) }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
-            WKWebViewPool.shared.handleMemoryWarning()
+            ReelPlayerPool.shared.handleMemoryPressure()
             ThumbnailPrefetcher.shared.handleMemoryWarning()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
-            guard let videoId = note.object as? String else { return }
-            if videoId == visibleId,
-               let idx = displayLectures.firstIndex(where: { $0.youtubeId == videoId }) {
-                let next = idx + 1 < displayLectures.count ? idx + 1
-                         : idx - 1 >= 0 ? idx - 1 : nil
-                if let next {
-                    visibleIndex = next
-                }
-            }
-            // Route through engine so syncDisplay stays the single source of truth
-            Task {
-                await feedEngine.blockVideo(id: videoId)
-                await syncDisplay()
-            }
         }
     }
 
@@ -225,10 +207,12 @@ struct DiscoverView: View {
             .background(CarbonColor.reelBackground)
         } else {
             SlidingLoop(items: displayLectures, visibleIndex: $visibleIndex) { lecture, isVisible in
+                let cellIndex = displayLectures.firstIndex { $0.youtubeId == lecture.youtubeId } ?? 0
+                let rel = cellIndex - visibleIndex
                 ReelView(
                     lecture: lecture,
                     isVisible: isVisible,
-                    isNearby: lecture.youtubeId == nextId,
+                    relativePosition: rel,
                     autoplayEnabled: autoplayEnabled,
                     captionsEnabled: captionsEnabled,
                     onViewCourse: { tappedLecture in

@@ -18,9 +18,6 @@ struct ReelView: View {
     /// Driven by the parent's scroll-position tracker. Controls auto-play/pause.
     var isVisible: Bool = false
 
-    /// When true, preloads the video player (hidden) — covers both prev and next reels.
-    var isNearby: Bool = false
-
     /// The cell's position relative to the current visible center,
     /// e.g. -1 for "one above center," +2 for "two below center."
     /// Drives which pool slot this cell borrows.
@@ -41,6 +38,11 @@ struct ReelView: View {
     @State private var toastText: String?
     @State private var showFullLabels = false
 
+    /// The pool slot whose time/state this reel displays. Resolved in `init`
+    /// from `ReelPlayerPool.shared.slot(forRelativePosition:)`; falls back to
+    /// a shared empty sentinel when the cell is outside the pool's window.
+    @ObservedObject private var slot: ReelPlayerPool.Slot
+
     private let sourceName: String
     private let accentColor: Color
     private let displayLabel: String
@@ -50,20 +52,27 @@ struct ReelView: View {
         lecture: Lecture,
         lectureIndex: Int? = nil,
         isVisible: Bool = false,
-        isNearby: Bool = false,
         relativePosition: Int = 0,
         autoplayEnabled: Bool = true,
         captionsEnabled: Bool = true,
         onViewCourse: ((Lecture) -> Void)? = nil
     ) {
         self.lecture = lecture
-        self.isNearby = isNearby
         self.relativePosition = relativePosition
         self.lectureIndex = lectureIndex
         self.isVisible = isVisible
         self.autoplayEnabled = autoplayEnabled
         self.captionsEnabled = captionsEnabled
         self.onViewCourse = onViewCourse
+
+        // Resolve the pool slot for this cell's relative position. Cells
+        // outside the ±capacityPerSide window get the shared empty sentinel,
+        // which is never assigned a lecture and therefore never triggers the
+        // `slot.duration > 0` scrubber gate below.
+        self._slot = ObservedObject(
+            wrappedValue: ReelPlayerPool.shared.slot(forRelativePosition: relativePosition)
+                ?? ReelPlayerPool.Slot.empty
+        )
 
         // Source-aware metadata: MIT uses school mapping, others use source branding
         if lecture.source == .mit {
@@ -263,7 +272,17 @@ struct ReelView: View {
                 }
             }
 
-            // TODO Phase 5: timeline scrubber reads from ReelPlayerPool slot currentTime/duration via @ObservedObject
+            if isVisible && slot.duration > 0 {
+                TimelineScrubber(
+                    currentTime: Binding(
+                        get: { slot.currentTime },
+                        set: { _ in /* read-only display; scrubbing handled via pool.seek */ }
+                    ),
+                    duration: slot.duration
+                ) { time in
+                    ReelPlayerPool.shared.seek(forRelativePosition: relativePosition, to: time)
+                }
+            }
         }
         .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
         .overlay(alignment: .bottom) {

@@ -33,17 +33,26 @@ final class ReelPlayerPool {
     }
 
     @MainActor
-    final class Slot {
+    final class Slot: ObservableObject {
         let webView: WKWebView
         var relativePosition: Int
-        var state: SlotState = .empty
+        @Published var state: SlotState = .empty
         var lectureId: String?
+        @Published var currentTime: Double = 0
+        @Published var duration: Double = 0
         var warmUpDeadline: Task<Void, Never>?
 
         init(webView: WKWebView, relativePosition: Int) {
             self.webView = webView
             self.relativePosition = relativePosition
         }
+
+        /// Shared placeholder slot used by cells that fall outside the pool's
+        /// ±capacityPerSide window. `@ObservedObject` needs a non-nil value,
+        /// so we hand out this sentinel. Lazy-init via `static let` means the
+        /// backing `WKWebView` is created exactly once for the lifetime of
+        /// the process — one extra WebContent process, not per cell.
+        static let empty: Slot = Slot(webView: WKWebView(), relativePosition: 999)
     }
 
     // MARK: - Singleton + init
@@ -133,6 +142,19 @@ final class ReelPlayerPool {
         slots.first(where: { $0.relativePosition == rp })?.webView
     }
 
+    /// Observable slot for a relative position. SwiftUI views can
+    /// `@ObservedObject` this to get state/time updates.
+    func slot(forRelativePosition rp: Int) -> Slot? {
+        slots.first(where: { $0.relativePosition == rp })
+    }
+
+    /// Seek the player at the given relative slot to `seconds`. No-op when
+    /// the slot is outside the pool's active window.
+    func seek(forRelativePosition rp: Int, to seconds: Double) {
+        guard let slot = slots.first(where: { $0.relativePosition == rp }) else { return }
+        slot.webView.evaluateJavaScript("seekTo(\(seconds))", completionHandler: nil)
+    }
+
     /// Convenience: what lecture id is the slot currently assigned to?
     func lectureId(forRelativePosition rp: Int) -> String? {
         slots.first(where: { $0.relativePosition == rp })?.lectureId
@@ -199,6 +221,12 @@ final class ReelPlayerPool {
 
         if body.hasPrefix("state:"), let s = Int(body.dropFirst(6)) {
             handleYouTubeState(s, slot: slot)
+        } else if body.hasPrefix("time:") {
+            let parts = body.dropFirst(5).split(separator: ":")
+            if parts.count == 2, let t = Double(parts[0]), let d = Double(parts[1]) {
+                slot.currentTime = t
+                slot.duration = d
+            }
         } else if body.hasPrefix("error:") {
             slot.warmUpDeadline?.cancel()
             slot.state = .failed(consecutiveFailures: failureCount(slot) + 1)
@@ -231,8 +259,14 @@ final class ReelPlayerPool {
         case (2, .playing):
             slot.state = .warm
         case (0, _):
-            // Ended — stays in current state.
-            break
+            // Ended — stays in current state, but if this is the center slot,
+            // post a notification so DiscoverView can advance to the next reel.
+            if slot.relativePosition == 0, let lectureId = slot.lectureId {
+                NotificationCenter.default.post(
+                    name: .reelPlayerPoolVideoEnded,
+                    object: lectureId
+                )
+            }
         default:
             break
         }
@@ -316,7 +350,11 @@ final class ReelPlayerPool {
                     playerReady = true;
                     msg('playerReady');
                 },
-                'onStateChange': function(e) { msg('state:' + e.data); },
+                'onStateChange': function(e) {
+                    msg('state:' + e.data);
+                    if (e.data === 1) startTimePolling();
+                    else if (e.data === 0 || e.data === 2) stopTimePolling();
+                },
                 'onError': function(e) { msg('error:' + e.data); }
             }
         });
@@ -357,6 +395,19 @@ final class ReelPlayerPool {
 
     function seekTo(s) { if (player && playerReady) player.seekTo(s, true); }
     function clearSlot() { if (player) { player.stopVideo(); } }
+
+    var timePoller = null;
+    function startTimePolling() {
+        stopTimePolling();
+        timePoller = setInterval(function() {
+            if (player && player.getCurrentTime) {
+                msg('time:' + (player.getCurrentTime()||0).toFixed(1) + ':' + (player.getDuration()||0).toFixed(1));
+            }
+        }, 500);
+    }
+    function stopTimePolling() {
+        if (timePoller) { clearInterval(timePoller); timePoller = null; }
+    }
     </script>
     </body>
     </html>
@@ -412,4 +463,13 @@ private final class PoolMessageHandler: NSObject, WKScriptMessageHandler {
             pool?.didReceiveMessage(body, from: wv)
         }
     }
+}
+
+// MARK: - Notification names
+
+extension Notification.Name {
+    /// Posted when the center slot's YouTube player reports state 0 (ended).
+    /// The notification `object` is the lecture id that just finished.
+    /// DiscoverView observes this to advance to the next reel.
+    static let reelPlayerPoolVideoEnded = Notification.Name("ReelPlayerPoolVideoEnded")
 }

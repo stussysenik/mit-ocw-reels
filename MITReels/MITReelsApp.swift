@@ -37,8 +37,8 @@ struct MITReelsApp: App {
     /// Orchestrates startup tasks sequentially so each phase completes before the next.
     /// All SwiftData work happens in batched MainActor.run blocks — max ~50ms main thread hold.
     private static func startInitialSetup(container: ModelContainer) {
-        // Warm up WebView pool immediately — no dependency on data
-        Task { @MainActor in WKWebViewPool.shared.warmUp() }
+        // Warm up the zero-wait reel player pool immediately — no dependency on data
+        Task { @MainActor in ReelPlayerPool.shared.warmUp() }
 
         Task.detached(priority: .userInitiated) {
             await seedDataIfNeeded(container: container)

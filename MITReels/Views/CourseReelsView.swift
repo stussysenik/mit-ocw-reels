@@ -10,7 +10,6 @@ struct CourseReelsView: View {
     /// Optional starting lecture — when set, scrolls to this lecture on appear (from Discover feed).
     var initialLectureId: String? = nil
     @State private var visibleId: String?
-    @State private var nextId: String?
     @State private var cachedLectures: [Lecture] = []
     @State private var hasScrolled = false
     @AppStorage("autoplayEnabled") private var autoplayEnabled = true
@@ -37,7 +36,6 @@ struct CourseReelsView: View {
                                 lecture: lecture,
                                 lectureIndex: index,
                                 isVisible: visibleId == lecture.youtubeId,
-                                isNearby: lecture.youtubeId == nextId,
                                 autoplayEnabled: autoplayEnabled,
                                 captionsEnabled: captionsEnabled
                             )
@@ -66,21 +64,13 @@ struct CourseReelsView: View {
                 visibleId = initialId
             }
         }
-        .onChange(of: visibleId) { old, new in
+        .onChange(of: visibleId) { _, _ in
             guard hasScrolled else { hasScrolled = true; return }
             haptic.impactOccurred()
             haptic.prepare()
             ThumbnailPrefetcher.shared.prefetch(lectures: cachedLectures, currentId: visibleId)
-            // Capture @State values before entering async Task to avoid Binding resolution
-            let lectures = cachedLectures
-            let vid = visibleId
-            // Defer WebView preload updates to after scroll animation settles
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
-                nextId = lectures.nextId(after: vid)
-            }
         }
-        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoEndedNotification)) { note in
+        .onReceive(NotificationCenter.default.publisher(for: .reelPlayerPoolVideoEnded)) { note in
             guard let endedId = note.object as? String, endedId == visibleId,
                   let idx = cachedLectures.firstIndex(where: { $0.youtubeId == endedId }),
                   idx + 1 < cachedLectures.count else { return }
@@ -91,18 +81,6 @@ struct CourseReelsView: View {
                   let idx = cachedLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
                   idx + 1 < cachedLectures.count else { return }
             withAnimation { visibleId = cachedLectures[idx + 1].youtubeId }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: YouTubePlayerView.Coordinator.videoUnavailableNotification)) { note in
-            guard let videoId = note.object as? String else { return }
-            if videoId == visibleId,
-               let idx = cachedLectures.firstIndex(where: { $0.youtubeId == videoId }) {
-                let next = idx + 1 < cachedLectures.count ? idx + 1
-                         : idx - 1 >= 0 ? idx - 1 : nil
-                if let next {
-                    withAnimation { visibleId = cachedLectures[next].youtubeId }
-                }
-            }
-            cachedLectures.removeAll { $0.youtubeId == videoId }
         }
     }
 }

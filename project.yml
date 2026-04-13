@@ -41,8 +41,6 @@ targets:
     platform: iOS
     sources:
       - path: MITReelsTests
-        excludes:
-          - "YouTubePlayerViewTests.swift"
     dependencies:
       - target: MITReels
     settings:
