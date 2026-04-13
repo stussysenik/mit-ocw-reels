@@ -295,11 +295,7 @@ struct ReelView: View {
                         // For autoplay-off, the iframe shows a black spinner until
                         // the user taps play — keep showing the thumbnail instead.
                         if !loading && !hasVideoError && isVisible && autoplayEnabled {
-                            Task { @MainActor in
-                                try? await Task.sleep(for: .milliseconds(150))
-                                guard isVisible, !showVideoLayer else { return }
-                                withAnimation(.easeIn(duration: 0.15)) { showVideoLayer = true }
-                            }
+                            withAnimation(.easeIn(duration: 0.15)) { showVideoLayer = true }
                         }
                     }
                 }
