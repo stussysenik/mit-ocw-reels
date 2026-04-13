@@ -18,6 +18,9 @@ struct DiscoverView: View {
 
     @State private var displayLectures: [Lecture] = []
     @SceneStorage("discoverVisibleId") private var visibleId: String?
+    /// Bridge between SlidingLoop's Int binding and the String-keyed app state.
+    /// visibleId remains the persisted source of truth; visibleIndex is derived.
+    @State private var visibleIndex: Int = 0
     @State private var nextId: String?
     @State private var hasScrolled = false
     @State private var navigateToCourse: Course?
@@ -138,6 +141,23 @@ struct DiscoverView: View {
                 nextId = displayLectures.nextId(after: new)
             }
         }
+        .onChange(of: visibleIndex) { _, new in
+            guard new >= 0, new < displayLectures.count else { return }
+            let newId = displayLectures[new].youtubeId
+            if visibleId != newId {
+                visibleId = newId
+            }
+        }
+        .onChange(of: displayLectures.map(\.youtubeId)) { _, _ in
+            // After bootstrap or buffer refresh, reconcile visibleIndex to
+            // whatever visibleId points to (preserves SceneStorage restoration).
+            if let vid = visibleId,
+               let idx = displayLectures.firstIndex(where: { $0.youtubeId == vid }) {
+                if visibleIndex != idx { visibleIndex = idx }
+            } else if !displayLectures.isEmpty {
+                visibleIndex = 0
+            }
+        }
         .modifier(ScrollVelocityModifier(feedEngine: feedEngine))
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in
             haptic.impactOccurred()
@@ -147,15 +167,14 @@ struct DiscoverView: View {
             guard let endedId = note.object as? String, endedId == visibleId,
                   let idx = displayLectures.firstIndex(where: { $0.youtubeId == endedId }),
                   idx + 1 < displayLectures.count else { return }
-            withAnimation { visibleId = displayLectures[idx + 1].youtubeId }
+            visibleIndex = idx + 1
         }
         .onReceive(NotificationCenter.default.publisher(for: ReelView.dislikeAdvanceNotification)) { note in
             guard let dislikedId = note.object as? String, dislikedId == visibleId,
                   let idx = displayLectures.firstIndex(where: { $0.youtubeId == dislikedId }),
                   idx + 1 < displayLectures.count else { return }
-            // Capture next ID synchronously before async engine mutation changes the array.
-            let nextVideoId = displayLectures[idx + 1].youtubeId
-            withAnimation { visibleId = nextVideoId }
+            // Advance by index — SlidingLoop animates to the new index via its spring.
+            visibleIndex = idx + 1
             Task {
                 await feedEngine.blockVideo(id: dislikedId)
                 await feedEngine.refreshWeights(feedPrefs)
@@ -176,7 +195,7 @@ struct DiscoverView: View {
                 let next = idx + 1 < displayLectures.count ? idx + 1
                          : idx - 1 >= 0 ? idx - 1 : nil
                 if let next {
-                    withAnimation { visibleId = displayLectures[next].youtubeId }
+                    visibleIndex = next
                 }
             }
             // Route through engine so syncDisplay stays the single source of truth
@@ -202,29 +221,19 @@ struct DiscoverView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(CarbonColor.reelBackground)
         } else {
-            ScrollView(.vertical) {
-                LazyVStack(spacing: 0) {
-                    ForEach(displayLectures, id: \.youtubeId) { lecture in
-                        ReelView(
-                            lecture: lecture,
-                            isVisible: visibleId == lecture.youtubeId,
-                            isNearby: lecture.youtubeId == nextId,
-                            autoplayEnabled: autoplayEnabled,
-                            captionsEnabled: captionsEnabled,
-                            onViewCourse: { tappedLecture in
-                                navigateToLectureId = tappedLecture.youtubeId
-                                navigateToCourse = tappedLecture.course
-                            }
-                        )
-                        .containerRelativeFrame(.vertical)
-                        .id(lecture.youtubeId)
+            SlidingLoop(items: displayLectures, visibleIndex: $visibleIndex) { lecture, isVisible in
+                ReelView(
+                    lecture: lecture,
+                    isVisible: isVisible,
+                    isNearby: lecture.youtubeId == nextId,
+                    autoplayEnabled: autoplayEnabled,
+                    captionsEnabled: captionsEnabled,
+                    onViewCourse: { tappedLecture in
+                        navigateToLectureId = tappedLecture.youtubeId
+                        navigateToCourse = tappedLecture.course
                     }
-                }
-                .scrollTargetLayout()
+                )
             }
-            .scrollPosition(id: $visibleId)
-            .scrollTargetBehavior(.paging)
-            .scrollIndicators(.hidden)
             .ignoresSafeArea(.container, edges: .vertical)
             .background(CarbonColor.reelBackground)
         }
