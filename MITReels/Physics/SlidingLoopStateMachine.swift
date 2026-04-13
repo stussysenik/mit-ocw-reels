@@ -48,10 +48,20 @@ struct SlidingLoopStateMachine: Sendable {
     /// Forwarded from `scrollViewWillBeginDragging`.
     ///
     /// Transitions to `.dragging` unconditionally — from `.idle` (normal start)
-    /// or from `.settling` (mid-settle interrupt). Resets the velocity tracker
-    /// so a fresh window collects the new drag.
+    /// or from `.settling` (mid-settle interrupt). On a mid-settle interrupt
+    /// the spring's residual velocity is handed off to the velocity tracker
+    /// as a scalar seed (Origami `POPBouncyPatch.mm:144-152` pattern), so
+    /// the subsequent `willEndDragging` reads the real motion the user's
+    /// finger caught instead of zero. Without this, grabbing a moving page
+    /// snaps it to a dead stop — the "catch the moving page" interaction
+    /// the spring physics were designed for simply doesn't work.
     mutating func willBeginDragging() {
+        let residual: Double = {
+            if case .settling = state { return spring.velocity }
+            return 0
+        }()
         velocityTracker.reset()
+        velocityTracker.seedVelocity(residual)
         state = .dragging
     }
 

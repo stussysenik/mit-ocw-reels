@@ -64,4 +64,49 @@ struct VelocityTrackerTests {
         tracker.add(position: 100, at: 0)
         #expect(tracker.velocity == 0)
     }
+
+    // MARK: - Velocity Handoff (Origami / POP pattern)
+
+    /// Seeding a velocity before any samples arrive makes the tracker
+    /// report that velocity. Models the Origami "catch the moving page"
+    /// handoff — spring velocity flows into the drag state as a scalar,
+    /// per POPBouncyPatch.mm:144-152 where `spring.velocity` is written
+    /// directly mid-flight, not reconstructed from position deltas.
+    @Test func seedVelocityBeforeSamplesReadsBackSeededValue() {
+        var tracker = VelocityTracker()
+        tracker.seedVelocity(1234)
+        #expect(tracker.velocity == 1234)
+    }
+
+    /// A seeded velocity is ignored once two real samples exist. The
+    /// rolling-window reading takes over seamlessly with no handoff glitch.
+    @Test func seedVelocityFallsThroughOnceSamplesArrive() {
+        var tracker = VelocityTracker()
+        tracker.seedVelocity(9999)  // obviously wrong number — should be overwritten
+        let dt = 1.0 / 60.0
+        tracker.add(position: 0, at: 0)
+        tracker.add(position: 10, at: dt)
+        // Two samples → computed = (10 - 0) / (1/60) = 600 pts/sec.
+        #expect(abs(tracker.velocity - 600) < 1)
+    }
+
+    /// Single sample + a pending seed: seed still wins (samples.count < 2).
+    /// Important edge case — if the user grabs a moving page and their
+    /// first touch-move hasn't landed yet, we still need the spring's
+    /// velocity, not zero.
+    @Test func singleSampleUsesSeedNotZero() {
+        var tracker = VelocityTracker()
+        tracker.seedVelocity(750)
+        tracker.add(position: 0, at: 0)
+        #expect(tracker.velocity == 750)
+    }
+
+    /// reset() clears pendingVelocity as well as samples — a full reset
+    /// semantically means "forget everything about prior motion."
+    @Test func resetClearsPendingVelocity() {
+        var tracker = VelocityTracker()
+        tracker.seedVelocity(500)
+        tracker.reset()
+        #expect(tracker.velocity == 0)
+    }
 }

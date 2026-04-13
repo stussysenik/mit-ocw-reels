@@ -105,4 +105,45 @@ struct SlidingLoopStateMachineTests {
             Issue.record("Expected .settling(1), got \(m.state)")
         }
     }
+
+    // MARK: - Velocity Handoff (Origami "catch the moving page")
+
+    /// Mid-settle grab must carry the spring's residual velocity into
+    /// the new drag. Without handoff, `willBeginDragging` resets the
+    /// tracker and a subsequent `willEndDragging` with no fresh samples
+    /// reads velocity = 0, which snaps back to the current page instead
+    /// of completing the in-flight motion. With the scalar seed (Origami
+    /// POPBouncyPatch.mm:144-152 pattern) the tracker carries the spring
+    /// velocity across the Settling → Dragging transition.
+    @Test func midSettleGrabPreservesSpringVelocity() {
+        var m = makeMachine()
+        // 1. Fling forward to build up spring velocity.
+        m.willBeginDragging()
+        m.didScroll(offset: 0, at: 0.0)
+        m.didScroll(offset: 20, at: 0.016)
+        m.didScroll(offset: 40, at: 0.032)
+        _ = m.willEndDragging(offset: 40)  // velocity > flickThreshold
+        // Advance one frame — spring is now settling toward page 1 (1000).
+        _ = m.tick(dt: 1.0 / 60.0)
+        // Sanity: the spring should now be carrying forward velocity.
+        #expect(m.spring.velocity > 0)
+
+        // 2. User grabs mid-settle with a single tiny position update.
+        m.willBeginDragging()
+        // 3. User lifts immediately with one sample — not enough for the
+        //    rolling window, so the tracker must fall through to the seed.
+        let target = m.willEndDragging(offset: 41)
+        // The seeded forward velocity should drive a flick decision to
+        // page 1 (target = 1000), not a snap back to page 0.
+        #expect(target == 1000)
+    }
+
+    /// Grabbing from `.idle` (not mid-settle) seeds 0 — there is no
+    /// residual to inherit because nothing was moving.
+    @Test func grabFromRestDoesNotInventVelocity() {
+        var m = makeMachine()
+        m.willBeginDragging()  // from .idle
+        let target = m.willEndDragging(offset: 0)
+        #expect(target == 0)  // settles to current page, not a phantom flick
+    }
 }
