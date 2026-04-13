@@ -22,7 +22,7 @@ final class ThumbnailPrefetcher {
     private let session: URLSession
 
     private init() {
-        imageCache.countLimit = 30              // ~15 MB for 480x360 JPEGs
+        imageCache.countLimit = 64              // ~1.3 MB for 480x360 JPEGs @ ~20KB each
         imageCache.totalCostLimit = 20_000_000  // 20 MB hard cap
 
         let config = URLSessionConfiguration.default
@@ -34,6 +34,21 @@ final class ThumbnailPrefetcher {
     }
 
     // MARK: - Public API
+
+    /// Read-only accessor for the NSCache countLimit (used by tests).
+    var cacheCountLimit: Int { imageCache.countLimit }
+
+    /// Compute the window of ids to prefetch around a center index.
+    /// Clamps to `[0, ids.count)`. Used by `DiscoverView` to drive the
+    /// ±window prefetch on `visibleIndex` change. Static so tests don't
+    /// need a warmed pool instance.
+    static func idsAround(centerIndex: Int, window: Int, in ids: [String]) -> [String] {
+        guard !ids.isEmpty, centerIndex < ids.count else { return [] }
+        let lower = max(0, centerIndex - window)
+        let upper = min(ids.count - 1, centerIndex + window)
+        guard lower <= upper else { return [] }
+        return Array(ids[lower...upper])
+    }
 
     /// O(1) cache lookup. Returns nil if the thumbnail hasn't been prefetched yet.
     func cachedImage(for videoId: String) -> UIImage? {

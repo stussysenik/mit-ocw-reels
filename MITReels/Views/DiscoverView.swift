@@ -125,15 +125,18 @@ struct DiscoverView: View {
                 }
             }
 
-            // Prefetch thumbnails from engine's ahead-window
-            Task {
-                let ids = await feedEngine.prefetchIds(count: 6)
-                for id in ids {
-                    if ThumbnailPrefetcher.shared.cachedImage(for: id) == nil {
-                        _ = await ThumbnailPrefetcher.shared.fetchAndCache(videoId: id)
-                    }
-                }
-            }
+            // Prefetch thumbnails in a ±25 window around the current visible
+            // index. Widened from the old forward-only ±6 so backward scrolls
+            // hit a cached thumbnail too. The ±25 window matches the
+            // ReelPlayerPool warm-up span and gives the "2ms floor" layer
+            // full coverage over the rapid-interaction test range.
+            let currentIndex = displayLectures.firstIndex { $0.youtubeId == new } ?? 0
+            let windowIds = ThumbnailPrefetcher.idsAround(
+                centerIndex: currentIndex,
+                window: 25,
+                in: displayLectures.map(\.youtubeId)
+            )
+            ThumbnailPrefetcher.shared.prefetchByIds(windowIds)
 
             // Defer WebView preload updates to after scroll animation settles
             Task { @MainActor in
