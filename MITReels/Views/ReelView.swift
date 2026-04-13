@@ -21,6 +21,11 @@ struct ReelView: View {
     /// When true, preloads the video player (hidden) — covers both prev and next reels.
     var isNearby: Bool = false
 
+    /// The cell's position relative to the current visible center,
+    /// e.g. -1 for "one above center," +2 for "two below center."
+    /// Drives which pool slot this cell borrows.
+    var relativePosition: Int = 0
+
     /// When false, videos won't auto-play on scroll — user must tap play manually.
     var autoplayEnabled: Bool = true
 
@@ -31,19 +36,10 @@ struct ReelView: View {
     var onViewCourse: ((Lecture) -> Void)? = nil
 
 
-    @State private var isVideoLoading = true
-    @State private var hasVideoError = false
-    /// Delayed flag — true only after the WebView has had time to paint its first frame.
-    /// Prevents flash of black iframe background between "loading done" and "frame rendered".
-    @State private var showVideoLayer = false
     @State private var showLiked = false
     @State private var showDisliked = false
     @State private var toastText: String?
     @State private var showFullLabels = false
-    @State private var currentTime: Double = 0
-    @State private var duration: Double = 0
-    @State private var isPlaying = false
-    @State private var seekTarget: Double? = nil
 
     private let sourceName: String
     private let accentColor: Color
@@ -55,12 +51,14 @@ struct ReelView: View {
         lectureIndex: Int? = nil,
         isVisible: Bool = false,
         isNearby: Bool = false,
+        relativePosition: Int = 0,
         autoplayEnabled: Bool = true,
         captionsEnabled: Bool = true,
         onViewCourse: ((Lecture) -> Void)? = nil
     ) {
         self.lecture = lecture
         self.isNearby = isNearby
+        self.relativePosition = relativePosition
         self.lectureIndex = lectureIndex
         self.isVisible = isVisible
         self.autoplayEnabled = autoplayEnabled
@@ -191,22 +189,6 @@ struct ReelView: View {
         }
         .background(CarbonColor.reelBackground.ignoresSafeArea())
         .geometryGroup()
-        .onAppear {
-            // Trigger autoplay on initial appear (onChange won't fire if isVisible is already true)
-            if isVisible && autoplayEnabled { isPlaying = true }
-        }
-        .onChange(of: isVisible) { _, visible in
-            isPlaying = visible && autoplayEnabled
-            if !visible {
-                showVideoLayer = false
-                if !isNearby {
-                    isVideoLoading = true
-                    hasVideoError = false
-                    currentTime = 0
-                    duration = 0
-                }
-            }
-        }
     }
 
     // MARK: - URL Helpers
@@ -262,57 +244,9 @@ struct ReelView: View {
         ZStack(alignment: .bottom) {
             ZStack(alignment: .topTrailing) {
                 CachedThumbnailView(videoId: lecture.youtubeId)
-                    .overlay {
-                        if isVisible && isVideoLoading && !hasVideoError {
-                            ShimmerView()
-                        }
-                    }
 
-                // Preload: create WKWebView when visible OR next (TikTok-style preloading)
-                if isVisible || isNearby {
-                    YouTubePlayerView(
-                        videoId: lecture.youtubeId,
-                        autoplay: isVisible && autoplayEnabled,
-                        isVisible: isVisible,
-                        captionsEnabled: captionsEnabled,
-                        isLoading: $isVideoLoading,
-                        hasError: $hasVideoError,
-                        currentTime: $currentTime,
-                        duration: $duration,
-                        isPlaying: $isPlaying,
-                        seekTo: $seekTarget
-                    )
+                PoolBorrowedPlayerView(relativePosition: relativePosition)
                     .compositingGroup()
-                    .opacity(isVisible && showVideoLayer ? 1 : 0)
-                    .onChange(of: isPlaying) { _, playing in
-                        // Playing guarantees a visible frame — reveal immediately.
-                        if playing && isVisible { showVideoLayer = true }
-                        if !playing && !isVisible { showVideoLayer = false }
-                    }
-                    .onChange(of: isVideoLoading) { _, loading in
-                        if loading { showVideoLayer = false }
-                        // Only auto-reveal when loading finishes AND autoplay is on.
-                        // For autoplay-off, the iframe shows a black spinner until
-                        // the user taps play — keep showing the thumbnail instead.
-                        if !loading && !hasVideoError && isVisible && autoplayEnabled {
-                            withAnimation(.easeIn(duration: 0.15)) { showVideoLayer = true }
-                        }
-                    }
-                }
-
-                if hasVideoError {
-                    VStack(spacing: Spacing.xs) {
-                        Image(systemName: "video.slash")
-                            .font(.title)
-                            .foregroundStyle(CarbonColor.textLabel)
-                        Text("Video unavailable")
-                            .font(.caption)
-                            .foregroundStyle(CarbonColor.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(CarbonColor.layerHover)
-                    .transition(.opacity)
-                }
 
                 // YouTube deep-link — top-right corner of video
                 if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
@@ -329,11 +263,7 @@ struct ReelView: View {
                 }
             }
 
-            if isVisible && !isVideoLoading && !hasVideoError && duration > 0 {
-                TimelineScrubber(currentTime: $currentTime, duration: duration) { time in
-                    seekTarget = time
-                }
-            }
+            // TODO Phase 5: timeline scrubber reads from ReelPlayerPool slot currentTime/duration via @ObservedObject
         }
         .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
         .overlay(alignment: .bottom) {
