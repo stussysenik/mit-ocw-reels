@@ -16,6 +16,7 @@ targets:
       - path: MITReels
         excludes:
           - "Resources/**"
+          - "Views/SettingsView.swift"
       - path: MITReels/Resources
         type: group
         buildPhase: resources
