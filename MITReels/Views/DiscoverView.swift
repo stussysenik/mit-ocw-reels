@@ -72,12 +72,16 @@ struct DiscoverView: View {
         }
         .onAppear {
             haptic.prepare()
+            ReelPlayerPool.shared.autoplayEnabled = autoplayEnabled
             if displayLectures.isEmpty && !lectures.isEmpty {
                 Task { await bootstrapEngine() }
             } else if sourcePrefs.enabledSourceIds != lastBuiltSources {
                 Task { await bootstrapEngine() }
             }
             // syncDisplay() handles stale visibleId — no duplicate check needed here
+        }
+        .onChange(of: autoplayEnabled) { _, new in
+            ReelPlayerPool.shared.autoplayEnabled = new
         }
         .onChange(of: lectures.count) { old, n in
             guard n > old else { return }
@@ -94,12 +98,21 @@ struct DiscoverView: View {
         .onChange(of: feedPrefs.blockedIds.count) { _, _ in debouncedRebuildFeed() }
         .onChange(of: scenePhase) { _, phase in
             // Graceful resume: rebuild pools from current lectures but preserve
-            // buffer, history, and session-local soft adjustments.
-            if phase == .active {
+            // buffer, history, and session-local soft adjustments. Also drive
+            // the ReelPlayerPool's continuity handlers so the center video
+            // pauses on background and picks up from its own playhead on
+            // return — WKWebView retains iframe state across scene phases.
+            switch phase {
+            case .active:
+                ReelPlayerPool.shared.handleSceneForeground()
                 Task {
                     await feedEngine.updateItems(feedItems)
                     await syncDisplay()
                 }
+            case .background, .inactive:
+                ReelPlayerPool.shared.handleSceneBackground()
+            @unknown default:
+                break
             }
         }
         .onChange(of: visibleId) { old, new in
@@ -158,6 +171,14 @@ struct DiscoverView: View {
             } else if !displayLectures.isEmpty {
                 visibleIndex = 0
             }
+            // Critical: drive the pool on bootstrap too, not only on scroll.
+            // The visibleId `onChange` above early-returns on the first fire
+            // (hasScrolled gate), so the initial reel never received a slot
+            // assignment and sat in `.empty` forever. This fires shift() for
+            // the current center as soon as the feed is ready.
+            guard !displayLectures.isEmpty else { return }
+            let center = max(0, min(visibleIndex, displayLectures.count - 1))
+            ReelPlayerPool.shared.shift(toCenterIndex: center, in: displayLectures)
         }
         .modifier(ScrollVelocityModifier(feedEngine: feedEngine))
         .onReceive(NotificationCenter.default.publisher(for: UIDevice.deviceDidShakeNotification)) { _ in

@@ -253,9 +253,16 @@ struct ReelView: View {
         ZStack(alignment: .bottom) {
             ZStack(alignment: .topTrailing) {
                 CachedThumbnailView(videoId: lecture.youtubeId)
+                    .opacity(isSlotRevealed ? 0 : 1)
+                    .animation(.easeOut(duration: 0.22), value: isSlotRevealed)
 
                 PoolBorrowedPlayerView(relativePosition: relativePosition)
                     .compositingGroup()
+                    .animation(.easeOut(duration: 0.22), value: isSlotRevealed)
+
+                playStateOverlay
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(slot.state != .playing)
 
                 // YouTube deep-link — top-right corner of video
                 if let ytURL = URL(string: "https://www.youtube.com/watch?v=\(lecture.youtubeId)") {
@@ -296,6 +303,65 @@ struct ReelView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .padding(.bottom, Spacing.md)
             }
+        }
+    }
+
+    /// True once the pool slot has revealed its WebView (first frame decoded
+    /// or playing). Drives the thumbnail crossfade — while false, the static
+    /// JPG thumbnail is visible; while true, the WebView takes over.
+    private var isSlotRevealed: Bool {
+        switch slot.state {
+        case .warming, .warm, .playing: return true
+        default: return false
+        }
+    }
+
+    // MARK: - Play-state overlay
+
+    @ViewBuilder
+    private var playStateOverlay: some View {
+        switch slot.state {
+        case .warm, .empty, .recycled:
+            Button {
+                haptic.impactOccurred()
+                ReelPlayerPool.shared.playCenter()
+            } label: {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 72, height: 72)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                    .offset(x: 2) // optical centering for play glyph
+            }
+            .buttonStyle(.plain)
+            .transition(.scale(scale: 0.8).combined(with: .opacity))
+        case .loading, .warming:
+            ProgressView()
+                .progressViewStyle(.circular)
+                .tint(.white)
+                .scaleEffect(1.3)
+                .frame(width: 72, height: 72)
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+        case .failed:
+            Button {
+                haptic.impactOccurred()
+                ReelPlayerPool.shared.playCenter()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 72, height: 72)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+            }
+            .buttonStyle(.plain)
+        case .playing:
+            EmptyView()
         }
     }
 
