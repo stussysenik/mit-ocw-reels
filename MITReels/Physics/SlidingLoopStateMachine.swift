@@ -25,6 +25,22 @@ struct SlidingLoopStateMachine: Sendable {
     private(set) var spring: Spring
     private var velocityTracker = VelocityTracker()
 
+    /// Fixed integration timestep in seconds. Settling steps the spring in
+    /// these quanta regardless of the `CADisplayLink` frame delta, so the
+    /// trajectory is a pure function of elapsed time — identical at 60 Hz and
+    /// 120 Hz, and stable through a frame stutter. 1/240 s is well inside the
+    /// semi-implicit-Euler stability bound for the default `response`.
+    private static let fixedStep: Double = 1.0 / 240.0
+
+    /// Carries the sub-quantum remainder of frame deltas between ticks so the
+    /// quanta stepped track wall-clock elapsed time exactly (no drift).
+    private var accumulator: Double = 0
+
+    /// The index the loop last settled on. Idle ticks report this directly
+    /// rather than re-deriving an index by rounding the position, which removes
+    /// the off-by-one at page boundaries.
+    private(set) var settledIndex: Int = 0
+
     /// Total page count. Set by the host view when `items.count` changes.
     var itemCount: Int = 0
 
@@ -62,6 +78,7 @@ struct SlidingLoopStateMachine: Sendable {
         }()
         velocityTracker.reset()
         velocityTracker.seedVelocity(residual)
+        accumulator = 0
         state = .dragging
     }
 
@@ -82,7 +99,8 @@ struct SlidingLoopStateMachine: Sendable {
         let targetY = Double(targetIndex) * pageHeight
         spring.position = offset
         spring.velocity = v
-        spring.target = targetY
+        spring.target = targetY  // always an exact integer multiple of pageHeight
+        accumulator = 0          // fresh settle: no carry-over from a prior run
         state = .settling(targetIndex: targetIndex)
         return targetY
     }
@@ -99,16 +117,28 @@ struct SlidingLoopStateMachine: Sendable {
     /// a late tick after stopping the driver.
     mutating func tick(dt: CFTimeInterval) -> (offset: Double, settledIndex: Int?) {
         guard case .settling(let targetIndex) = state else {
-            let currentIndex = Int((spring.position / max(pageHeight, 1)).rounded())
-            return (spring.position, currentIndex)
+            // Idle: report the stored settle index, not a re-rounded position,
+            // so the idle index can never disagree with the settle target.
+            return (spring.position, settledIndex)
         }
-        spring = spring.stepped(dt: dt)
-        if spring.isSettled {
-            let final = spring.target
-            spring.position = final
-            spring.velocity = 0
-            state = .idle
-            return (final, targetIndex)
+        // Integrate the spring in fixed quanta, carrying the remainder. The
+        // epsilon absorbs float-accumulation error so clean refresh rates
+        // (60 Hz → 4 quanta/tick, 120 Hz → 2) extract an identical, stable
+        // count per matched elapsed time.
+        let epsilon = Self.fixedStep * 1e-3
+        accumulator += dt
+        while accumulator + epsilon >= Self.fixedStep {
+            accumulator -= Self.fixedStep
+            spring = spring.stepped(dt: Self.fixedStep)
+            if spring.isSettled {
+                let final = spring.target  // exact: targetIndex * pageHeight
+                spring.position = final
+                spring.velocity = 0
+                accumulator = 0
+                settledIndex = targetIndex
+                state = .idle
+                return (final, targetIndex)
+            }
         }
         return (spring.position, nil)
     }
@@ -120,6 +150,8 @@ struct SlidingLoopStateMachine: Sendable {
         spring.position = y
         spring.velocity = 0
         spring.target = y
+        accumulator = 0
+        settledIndex = index
         state = .idle
     }
 }

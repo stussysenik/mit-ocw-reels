@@ -11,6 +11,9 @@ import SwiftData
 struct MITReelsApp: App {
     let container: ModelContainer
 
+    /// Central source of truth for cross-cutting UI state (theme, etc.).
+    @State private var appState = AppState()
+
     init() {
         // URL cache for thumbnails + YouTube player JS — generous limits for media app
         URLCache.shared.memoryCapacity = 100 * 1024 * 1024  // 100 MB (~3K thumbnails)
@@ -55,6 +58,7 @@ struct MITReelsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(appState)
         }
         .modelContainer(container)
     }

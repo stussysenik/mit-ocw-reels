@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="MIT Reels — friendly blue person on white">
+  <!-- Full-bleed white background; iOS applies the squircle mask. -->
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+
+  <!-- Soft shoulders / bust -->
+  <path d="M214 936
+           C214 726 348 626 512 626
+           C676 626 810 726 810 936
+           Z"
+        fill="#2F6FED"/>
+
+  <!-- Head -->
+  <circle cx="512" cy="382" r="190" fill="#2F6FED"/>
+
+  <!-- Cartoon face: eyes + smile knocked out in white -->
+  <circle cx="448" cy="360" r="30" fill="#FFFFFF"/>
+  <circle cx="576" cy="360" r="30" fill="#FFFFFF"/>
+  <path d="M438 446 Q512 524 586 446"
+        fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+
+  <!-- Light-blue cheek highlights for a soft, friendly read -->
+  <circle cx="420" cy="430" r="22" fill="#7FA8F7" opacity="0.55"/>
+  <circle cx="604" cy="430" r="22" fill="#7FA8F7" opacity="0.55"/>
+</svg>

@@ -38,16 +38,9 @@ enum MITSchool: String, CaseIterable, Identifiable, Equatable {
         }
     }
 
-    /// Accent color for badges and section headers.
-    var color: Color {
-        switch self {
-        case .engineering: return Color(hex: 0x3A7CA5)       // Steel blue
-        case .science: return Color(hex: 0x6B9F36)           // Forest green
-        case .architecturePlanning: return Color(hex: 0xD4A843) // Golden amber
-        case .humanitiesArts: return Color(hex: 0xB05C8A)    // Mauve
-        case .crossDisciplinary: return Color(hex: 0x7B7B7B) // Neutral gray
-        }
-    }
+    /// Accent color for badges and section headers — an OKLCH palette built at
+    /// uniform perceptual lightness (see `SchoolPalette`).
+    var color: Color { SchoolPalette.accent(for: self) }
 
     /// Maps a course number to its parent MIT School.
     ///

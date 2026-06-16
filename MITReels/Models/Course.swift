@@ -13,6 +13,11 @@ final class Course {
     /// UniversitySource.rawValue — defaults to "mit" for backward compatibility.
     var sourceId: String = "mit"
 
+    /// True for courses the user assembled in Build mode ("Mine" library);
+    /// false for the built-in MIT/OCW catalog. CloudKit-safe default so existing
+    /// records migrate as catalog content.
+    var isUserCreated: Bool = false
+
     /// Convenience accessor for the typed source enum.
     var source: UniversitySource {
         UniversitySource(rawValue: sourceId) ?? .mit

@@ -65,13 +65,42 @@ enum CarbonColor {
     /// White — reel card background in light mode (alias for layer01)
     static let reelBackground = layer01
 
-    // --- School Gradient Endpoints ---
+}
 
-    static let engineeringGradientEnd = Color(hex: 0x5BA3CC)
-    static let scienceGradientEnd = Color(hex: 0x8FC455)
-    static let archPlanningGradientEnd = Color(hex: 0xE8C96A)
-    static let humanitiesGradientEnd = Color(hex: 0xD07BA8)
-    static let crossDiscGradientEnd = Color(hex: 0xA0A0A0)
+// MARK: - School Color Palette (OKLCH)
+// Every school accent is built at a single perceptual lightness, so white text
+// is equally legible on all of them and no one color out-weighs the others
+// (the uniformity HSL can't give). Each gradient end shares its hue and only
+// brightens — OKLCH gradients have no mid-gradient darkening.
+
+enum SchoolPalette {
+    /// Shared perceptual lightness / chroma of every school accent.
+    static let baseL = 0.55
+    static let baseC = 0.13
+    /// Gradient end: same hue, brighter, slightly calmer chroma.
+    static let endL = 0.66
+    static let endC = 0.115
+
+    /// Default (chroma, hue°) per school. Chroma 0 = neutral gray.
+    static func defaultCH(for school: MITSchool) -> (c: Double, h: Double) {
+        switch school {
+        case .engineering:          return (baseC, 250)  // blue
+        case .science:              return (baseC, 150)  // green
+        case .architecturePlanning: return (baseC, 75)   // gold
+        case .humanitiesArts:       return (baseC, 350)  // rose
+        case .crossDisciplinary:    return (0, 0)        // neutral
+        }
+    }
+
+    static func accent(for school: MITSchool) -> Color {
+        let (c, h) = defaultCH(for: school)
+        return Color(oklch: baseL, c, h)
+    }
+
+    static func gradientEnd(for school: MITSchool) -> Color {
+        let (c, h) = defaultCH(for: school)
+        return Color(oklch: endL, c == 0 ? 0 : endC, h)
+    }
 }
 
 // MARK: - Typography Scale (NASA-inspired)
@@ -88,15 +117,7 @@ enum Typography {
 // MARK: - MITSchool Gradient Extension
 
 extension MITSchool {
-    var gradientEndColor: Color {
-        switch self {
-        case .engineering: return CarbonColor.engineeringGradientEnd
-        case .science: return CarbonColor.scienceGradientEnd
-        case .architecturePlanning: return CarbonColor.archPlanningGradientEnd
-        case .humanitiesArts: return CarbonColor.humanitiesGradientEnd
-        case .crossDisciplinary: return CarbonColor.crossDiscGradientEnd
-        }
-    }
+    var gradientEndColor: Color { SchoolPalette.gradientEnd(for: self) }
 }
 
 // MARK: - Section Header Style

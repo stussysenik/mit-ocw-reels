@@ -51,3 +51,7 @@ fastlane/test_output/
 # Maestro artifacts (loose screenshots in root)
 *.png
 !screenshots/*.png
+
+# Secrets — never commit
+.env.local
+.env

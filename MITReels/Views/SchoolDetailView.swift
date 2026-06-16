@@ -9,6 +9,7 @@ import SwiftUI
 /// - Filter by department via tappable section headers (list) or pill bar (grid)
 /// - Search across title, courseNumber, department
 struct SchoolDetailView: View {
+    @Environment(AppState.self) private var appState
     let school: MITSchool
     let courses: [Course]
 
@@ -115,7 +116,7 @@ struct SchoolDetailView: View {
                         HStack {
                             Text(dept.department)
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(school.color)
+                                .foregroundStyle(appState.accent(for: school))
 
                             Spacer()
 
@@ -156,7 +157,7 @@ struct SchoolDetailView: View {
                 ], spacing: Spacing.sm) {
                     ForEach(cachedDisplayedCourses, id: \.courseNumber) { course in
                         NavigationLink(destination: CourseReelsView(course: course)) {
-                            CourseGridItemView(course: course, accentColor: school.color)
+                            CourseGridItemView(course: course, accentColor: appState.accent(for: school))
                         }
                         .buttonStyle(.plain)
                     }
@@ -181,7 +182,7 @@ struct SchoolDetailView: View {
                             .padding(.vertical, 5)
                             .background(
                                 isSelected
-                                    ? AnyShapeStyle(school.color)
+                                    ? AnyShapeStyle(appState.accent(for: school))
                                     : AnyShapeStyle(CarbonColor.layerHover)
                             )
                             .clipShape(Capsule())
@@ -197,7 +198,7 @@ struct SchoolDetailView: View {
     private func courseRow(_ course: Course) -> some View {
         HStack(spacing: 0) {
             Rectangle()
-                .fill(school.color)
+                .fill(appState.accent(for: school))
                 .frame(width: 3)
                 .clipShape(RoundedRectangle(cornerRadius: 1.5))
 
@@ -248,4 +249,5 @@ struct SchoolDetailView: View {
         )
     }
     .modelContainer(PreviewSampleData.container)
+    .environment(AppState())
 }

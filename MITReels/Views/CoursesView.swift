@@ -10,6 +10,7 @@ import SwiftData
 /// Follows the MIT Registrar's five-school hierarchy:
 /// Engineering, Science, Architecture & Planning, Humanities, Cross-Disciplinary.
 struct CoursesView: View {
+    @Environment(AppState.self) private var appState
     @Query(sort: \Course.department) private var courses: [Course]
     @State private var searchText = ""
     @State private var showSettings = false
@@ -212,6 +213,8 @@ struct CoursesView: View {
                     Text("Playback").sectionHeader()
                 }
 
+                appearanceSection
+
                 SourceFilterSection(sourcePrefs: sourcePrefs)
 
                 algorithmSection
@@ -226,6 +229,34 @@ struct CoursesView: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    // MARK: - Appearance (school colors)
+
+    private var appearanceSection: some View {
+        Section {
+            ForEach(MITSchool.allCases) { school in
+                ColorPicker(selection: appState.accentBinding(for: school), supportsOpacity: false) {
+                    HStack(spacing: Spacing.sm) {
+                        Image(systemName: school.systemImage)
+                            .foregroundStyle(appState.accent(for: school))
+                            .frame(width: 28)
+                        Text(school.shortName)
+                            .font(.body)
+                            .foregroundStyle(CarbonColor.textPrimary)
+                    }
+                }
+            }
+            if appState.hasColorOverrides {
+                Button("Reset Colors to Defaults", role: .destructive) {
+                    appState.resetAllColors()
+                }
+            }
+        } header: {
+            Text("School Colors").sectionHeader()
+        } footer: {
+            Text("Tap a swatch to make a school your own. Defaults use a perceptually-balanced OKLCH palette.")
+        }
     }
 
     @ViewBuilder
@@ -283,5 +314,6 @@ struct CoursesView: View {
 #Preview {
     CoursesView()
         .modelContainer(PreviewSampleData.container)
+        .environment(AppState())
 }
 #endif

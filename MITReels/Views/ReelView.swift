@@ -327,37 +327,33 @@ struct ReelView: View {
                 ReelPlayerPool.shared.playCenter()
             } label: {
                 Image(systemName: "play.fill")
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 56, weight: .regular))
                     .foregroundStyle(.white)
-                    .frame(width: 72, height: 72)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                    .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
+                    .frame(width: 88, height: 88)  // generous tap target
+                    .contentShape(Rectangle())
                     .offset(x: 2) // optical centering for play glyph
             }
             .buttonStyle(.plain)
-            .transition(.scale(scale: 0.8).combined(with: .opacity))
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
         case .loading, .warming:
             ProgressView()
                 .progressViewStyle(.circular)
                 .tint(.white)
-                .scaleEffect(1.3)
-                .frame(width: 72, height: 72)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                .scaleEffect(1.2)
+                .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
+                .frame(width: 88, height: 88)
         case .failed:
             Button {
                 haptic.impactOccurred()
                 ReelPlayerPool.shared.playCenter()
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.system(size: 30, weight: .regular))
                     .foregroundStyle(.white)
-                    .frame(width: 72, height: 72)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                    .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
+                    .frame(width: 88, height: 88)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         case .playing:

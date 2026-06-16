@@ -5,6 +5,7 @@ import SwiftUI
 /// Shows school icon, name, course/lecture counts, and department pills.
 /// Used as NavigationLink content in CoursesView.
 struct SchoolCardView: View {
+    @Environment(AppState.self) private var appState
     let school: MITSchool
     let courseCount: Int
     let lectureCount: Int
@@ -52,7 +53,7 @@ struct SchoolCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LinearGradient(
-                colors: [school.color, school.gradientEndColor],
+                colors: [appState.accent(for: school), appState.gradientEnd(for: school)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -69,4 +70,5 @@ struct SchoolCardView: View {
         departments: ["EECS", "Mechanical Eng", "Civil Eng"]
     )
     .padding()
+    .environment(AppState())
 }

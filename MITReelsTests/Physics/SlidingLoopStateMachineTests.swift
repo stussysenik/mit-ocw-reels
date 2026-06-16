@@ -146,4 +146,104 @@ struct SlidingLoopStateMachineTests {
         let target = m.willEndDragging(offset: 0)
         #expect(target == 0)  // settles to current page, not a phantom flick
     }
+
+    // MARK: - Frame-rate-independent settling (loop-engine spec)
+
+    /// Drives one machine through a flick using the supplied per-tick frame
+    /// delta, sampling the in-flight content offset on every `nth` tick (only
+    /// while still settling — the settle frame snaps to target and is reported
+    /// separately). Returns the settle index, the exact final offset, and the
+    /// pre-settle trajectory samples.
+    private func runFlick(dt: Double, sampleEveryNthTick nth: Int)
+        -> (index: Int, finalOffset: Double, samples: [Double]) {
+        var m = makeMachine()
+        m.willBeginDragging()
+        m.didScroll(offset: 0, at: 0.0)
+        m.didScroll(offset: 20, at: 0.016)
+        m.didScroll(offset: 40, at: 0.032)
+        _ = m.willEndDragging(offset: 40)  // forward flick → target page 1 (1000)
+
+        var samples: [Double] = []
+        var index: Int? = nil
+        var finalOffset = 40.0
+        var ticks = 0
+        while index == nil && ticks < 8000 {
+            let r = m.tick(dt: dt)
+            ticks += 1
+            if let s = r.settledIndex {
+                index = s
+                finalOffset = r.offset
+                break
+            }
+            if ticks % nth == 0 { samples.append(r.offset) }
+        }
+        return (index ?? -1, finalOffset, samples)
+    }
+
+    /// The headline determinism guarantee: the same flick must produce the same
+    /// settled index, the same final offset *to the pixel*, and an identical
+    /// trajectory at matched elapsed times, whether the display runs at 60 Hz
+    /// or 120 Hz. With variable-`dt` semi-implicit Euler the trajectories
+    /// diverge; fixed-timestep integration makes position a pure function of
+    /// elapsed time. We sample the 120 Hz run every other tick so both sample
+    /// sequences land on the same 1/60 s grid.
+    @Test func identicalFlickSettlesIdenticallyAt60And120Hz() {
+        let a = runFlick(dt: 1.0 / 60.0, sampleEveryNthTick: 1)
+        let b = runFlick(dt: 1.0 / 120.0, sampleEveryNthTick: 2)
+
+        #expect(a.index == b.index)
+        #expect(a.finalOffset == b.finalOffset)  // exact rest position, to the pixel
+
+        let n = min(a.samples.count, b.samples.count)
+        #expect(n >= 8)  // enough overlap to be meaningful
+        for i in 0..<n {
+            #expect(a.samples[i] == b.samples[i])
+        }
+    }
+
+    /// A frame stutter must not change the outcome or visibly glitch the
+    /// trajectory. We compare a smooth 60 Hz settle against the extreme case of
+    /// a 1/12 s delta on *every* tick (a sustained hitch). Sampling the fine
+    /// run every 5th tick aligns both on the same 1/12 s grid. Under variable
+    /// `dt` the coarse delta overshoots wildly (semi-implicit Euler is unstable
+    /// at large steps); fixed-timestep integration breaks each delta into safe
+    /// quanta, so both trajectories match.
+    @Test func largeFrameStutterMatchesSmoothSettle() {
+        let smooth = runFlick(dt: 1.0 / 60.0, sampleEveryNthTick: 5)
+        let stutter = runFlick(dt: 1.0 / 12.0, sampleEveryNthTick: 1)
+
+        #expect(smooth.index == stutter.index)
+        #expect(smooth.finalOffset == stutter.finalOffset)
+
+        let n = min(smooth.samples.count, stutter.samples.count)
+        #expect(n >= 3)
+        for i in 0..<n {
+            #expect(smooth.samples[i] == stutter.samples[i])
+        }
+    }
+
+    /// After settling to `targetIndex`, an idle tick must report that exact
+    /// index — never an off-by-one from re-deriving it by rounding the position.
+    @Test func idleIndexAgreesWithSettleTarget() {
+        var m = makeMachine()
+        m.willBeginDragging()
+        m.didScroll(offset: 0, at: 0.0)
+        m.didScroll(offset: 20, at: 0.016)
+        m.didScroll(offset: 40, at: 0.032)
+        _ = m.willEndDragging(offset: 40)  // → target page 1
+
+        var index: Int? = nil
+        var steps = 0
+        while index == nil && steps < 2000 {
+            index = m.tick(dt: 1.0 / 120.0).settledIndex
+            steps += 1
+        }
+        #expect(index == 1)
+        #expect(m.state == .idle)
+
+        // A late idle tick reports the same index and the exact rest offset.
+        let again = m.tick(dt: 1.0 / 60.0)
+        #expect(again.settledIndex == 1)
+        #expect(again.offset == 1000)
+    }
 }
